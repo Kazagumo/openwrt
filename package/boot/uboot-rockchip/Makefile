@@ -5,15 +5,16 @@
 include $(TOPDIR)/rules.mk
 include $(INCLUDE_DIR)/kernel.mk
 
-PKG_VERSION:=2021.07
-PKG_RELEASE:=$(AUTORELEASE)
+PKG_VERSION:=2023.01
+PKG_RELEASE:=1
 
-PKG_HASH:=312b7eeae44581d1362c3a3f02c28d806647756c82ba8c72241c7cdbe68ba77e
+PKG_HASH:=69423bad380f89a0916636e89e6dcbd2e4512d584308d922d1039d1e4331950f
 
 PKG_MAINTAINER:=Tobias Maedel <openwrt@tbspace.de>
 
 include $(INCLUDE_DIR)/u-boot.mk
 include $(INCLUDE_DIR)/package.mk
+include ../arm-trusted-firmware-rockchip/atf-version.mk
 
 define U-Boot/Default
   BUILD_TARGET:=rockchip
@@ -24,48 +25,57 @@ endef
 
 # RK3328 boards
 
-define U-Boot/nanopi-r2s-rk3328
+define U-Boot/Default/rk3328
   BUILD_SUBTARGET:=armv8
+  DEPENDS:=+PACKAGE_u-boot-$(1):trusted-firmware-a-rk3328
+  ATF:=$(RK3328_ATF)
+endef
+
+define U-Boot/nanopi-r2s-rk3328
+  $(U-Boot/Default/rk3328)
   NAME:=NanoPi R2S
   BUILD_DEVICES:= \
     friendlyarm_nanopi-r2s
-  DEPENDS:=+PACKAGE_u-boot-nanopi-r2s-rk3328:arm-trusted-firmware-rockchip
-  PKG_BUILD_DEPENDS:=arm-trusted-firmware-rockchip
-  ATF:=rk3328_bl31.elf
-  OF_PLATDATA:=$(1)
 endef
 
 
 # RK3399 boards
 
-define U-Boot/nanopi-r4s-rk3399
+define U-Boot/Default/rk3399
   BUILD_SUBTARGET:=armv8
+  DEPENDS:=+PACKAGE_u-boot-$(1):trusted-firmware-a-rk3399
+  ATF:=$(RK3399_ATF)
+endef
+
+define U-Boot/nanopi-r4s-rk3399
+  $(U-Boot/Default/rk3399)
   NAME:=NanoPi R4S
   BUILD_DEVICES:= \
     friendlyarm_nanopi-r4s
-  DEPENDS:=+PACKAGE_u-boot-nanopi-r4s-rk3399:arm-trusted-firmware-rockchip
-  PKG_BUILD_DEPENDS:=arm-trusted-firmware-rockchip
-  ATF:=rk3399_bl31.elf
 endef
 
 define U-Boot/rock-pi-4-rk3399
-  BUILD_SUBTARGET:=armv8
+  $(U-Boot/Default/rk3399)
   NAME:=Rock Pi 4
   BUILD_DEVICES:= \
     radxa_rock-pi-4a
-  DEPENDS:=+PACKAGE_u-boot-rock-pi-4-rk3399:arm-trusted-firmware-rockchip
-  PKG_BUILD_DEPENDS:=arm-trusted-firmware-rockchip
-  ATF:=rk3399_bl31.elf
 endef
 
 define U-Boot/rockpro64-rk3399
-  BUILD_SUBTARGET:=armv8
+  $(U-Boot/Default/rk3399)
   NAME:=RockPro64
   BUILD_DEVICES:= \
     pine64_rockpro64
-  DEPENDS:=+PACKAGE_u-boot-rockpro64-rk3399:arm-trusted-firmware-rockchip
-  PKG_BUILD_DEPENDS:=arm-trusted-firmware-rockchip
-  ATF:=rk3399_bl31.elf
+endef
+
+
+# RK3568 boards
+
+define U-Boot/Default/rk3568
+  BUILD_SUBTARGET:=armv8
+  DEPENDS:=+PACKAGE_u-boot-$(1):trusted-firmware-a-rk3568
+  ATF:=$(RK3568_ATF)
+  DDR:=$(RK3568_DDR)
 endef
 
 UBOOT_TARGETS := \
@@ -82,23 +92,23 @@ UBOOT_MAKE_FLAGS += \
 define Build/Configure
 	$(call Build/Configure/U-Boot)
 
-ifneq ($(OF_PLATDATA),)
-	mkdir -p $(PKG_BUILD_DIR)/tpl/dts
-	mkdir -p $(PKG_BUILD_DIR)/include/generated
-
-	$(CP) $(PKG_BUILD_DIR)/of-platdata/$(OF_PLATDATA)/dt-plat.c $(PKG_BUILD_DIR)/tpl/dts/dt-plat.c
-	$(CP) $(PKG_BUILD_DIR)/of-platdata/$(OF_PLATDATA)/dt-structs-gen.h $(PKG_BUILD_DIR)/include/generated/dt-structs-gen.h
-	$(CP) $(PKG_BUILD_DIR)/of-platdata/$(OF_PLATDATA)/dt-decl.h $(PKG_BUILD_DIR)/include/generated/dt-decl.h
-endif
-
 	$(SED) 's#CONFIG_MKIMAGE_DTC_PATH=.*#CONFIG_MKIMAGE_DTC_PATH="$(PKG_BUILD_DIR)/scripts/dtc/dtc"#g' $(PKG_BUILD_DIR)/.config
-	echo 'CONFIG_IDENT_STRING=" OpenWrt"' >> $(PKG_BUILD_DIR)/.config
+
+ifneq ($(DDR),)
+	$(INSTALL_DIR) $(PKG_BUILD_DIR)/tpl
+	$(CP) $(STAGING_DIR_IMAGE)/$(DDR) $(PKG_BUILD_DIR)/tpl/u-boot-tpl.bin
+endif
 endef
 
 define Build/InstallDev
 	$(INSTALL_DIR) $(STAGING_DIR_IMAGE)
+ifneq ($(DDR),)
 	$(CP) $(PKG_BUILD_DIR)/idbloader.img $(STAGING_DIR_IMAGE)/$(BUILD_VARIANT)-idbloader.img
 	$(CP) $(PKG_BUILD_DIR)/u-boot.itb $(STAGING_DIR_IMAGE)/$(BUILD_VARIANT)-u-boot.itb
+else
+	$(STAGING_DIR_IMAGE)/loaderimage --pack --uboot $(PKG_BUILD_DIR)/u-boot-dtb.bin $(PKG_BUILD_DIR)/uboot.img 0x200000
+	$(CP) $(PKG_BUILD_DIR)/uboot.img $(STAGING_DIR_IMAGE)/$(BUILD_VARIANT)-uboot.img
+endif
 endef
 
 define Package/u-boot/install/default

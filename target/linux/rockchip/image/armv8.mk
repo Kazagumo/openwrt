@@ -32,7 +32,7 @@ define Device/friendlyarm_nanopi-r5c
   SOC := rk3568
   UBOOT_DEVICE_NAME := nanopi-r5c-rk3568
   IMAGE/sysupgrade.img.gz := boot-common | boot-script | pine64-img | gzip | append-metadata
-  DEVICE_PACKAGES := kmod-r8169 kmod-rtw88 rtl8822ce-firmware wpad-basic-wolfssl
+  DEVICE_PACKAGES := kmod-r8125 kmod-rtw88 rtl8822ce-firmware wpad-basic-wolfssl
 endef
 TARGET_DEVICES += friendlyarm_nanopi-r5c
 
@@ -42,7 +42,7 @@ define Device/friendlyarm_nanopi-r5s
   SOC := rk3568
   UBOOT_DEVICE_NAME := nanopi-r5s-rk3568
   IMAGE/sysupgrade.img.gz := boot-common | boot-script | pine64-img | gzip | append-metadata
-  DEVICE_PACKAGES := kmod-r8169
+  DEVICE_PACKAGES := kmod-r8125
 endef
 TARGET_DEVICES += friendlyarm_nanopi-r5s
 

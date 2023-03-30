@@ -1,0 +1,36 @@
+From 660c486590aa4190969653218643b3a4e5660f2b Mon Sep 17 00:00:00 2001
+From: Vidya Sagar <vidyas@nvidia.com>
+Date: Tue, 17 Nov 2020 22:23:12 +0530
+Subject: [PATCH] PCI: dwc: Set 32-bit DMA mask for MSI target address
+ allocation
+
+Set DMA mask to 32-bit while allocating the MSI target address so that
+the address is usable for both 32-bit and 64-bit MSI capable devices.
+Throw a warning if it fails to set the mask to 32-bit to alert that
+devices that are only 32-bit MSI capable may not work properly.
+
+Link: https://lore.kernel.org/r/20201117165312.25847-1-vidyas@nvidia.com
+Signed-off-by: Vidya Sagar <vidyas@nvidia.com>
+Signed-off-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Reviewed-by: Robin Murphy <robin.murphy@arm.com>
+---
+ drivers/pci/controller/dwc/pcie-designware-host.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+--- a/drivers/pci/controller/dwc/pcie-designware-host.c
++++ b/drivers/pci/controller/dwc/pcie-designware-host.c
+@@ -396,6 +396,14 @@ int dw_pcie_host_init(struct pcie_port *
+ 							    dw_chained_msi_isr,
+ 							    pp);
+ 
++			ret = dma_set_mask(pci->dev, DMA_BIT_MASK(32));
++			if (!ret) {
++				dev_warn(pci->dev,
++					 "Failed to set DMA mask to 32-bit. "
++					 "Devices with only 32-bit MSI support"
++					 " may not work properly\n");
++			}
++
+ 			pp->msi_data = dma_map_single_attrs(pci->dev, &pp->msi_msg,
+ 						      sizeof(pp->msi_msg),
+ 						      DMA_FROM_DEVICE,

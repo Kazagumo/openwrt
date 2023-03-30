@@ -1,0 +1,87 @@
+From cf911d89c4c5e225a2a2cfadf1364838154b2202 Mon Sep 17 00:00:00 2001
+From: Elaine Zhang <zhangqing@rock-chips.com>
+Date: Mon, 15 Mar 2021 16:56:08 +0800
+Subject: [PATCH] clk: rockchip: add clock controller for rk3568
+
+Add the clock tree definition for the new rk3568 SoC.
+
+Signed-off-by: Elaine Zhang <zhangqing@rock-chips.com>
+Reviewed-by: Kever Yang <kever.yang@rock-chips.com>
+Acked-by: Stephen Boyd <sboyd@kernel.org>
+Link: https://lore.kernel.org/r/20210315085608.16010-5-zhangqing@rock-chips.com
+Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+---
+ drivers/clk/rockchip/Kconfig      |    7 +
+ drivers/clk/rockchip/Makefile     |    1 +
+ drivers/clk/rockchip/clk-rk3568.c | 1725 +++++++++++++++++++++++++++++
+ drivers/clk/rockchip/clk.h        |   30 +-
+ 4 files changed, 1762 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/clk/rockchip/clk-rk3568.c
+
+--- a/drivers/clk/rockchip/Kconfig
++++ b/drivers/clk/rockchip/Kconfig
+@@ -75,4 +75,11 @@ config CLK_RK3399
+ 	default y
+ 	help
+ 	  Build the driver for RK3399 Clock Driver.
++
++config CLK_RK3568
++	tristate "Rockchip RK3568 clock controller support"
++	depends on ARM64 || COMPILE_TEST
++	default y
++	help
++	  Build the driver for RK3568 Clock Driver.
+ endif
+--- a/drivers/clk/rockchip/Makefile
++++ b/drivers/clk/rockchip/Makefile
+@@ -26,3 +26,4 @@ obj-$(CONFIG_CLK_RK3308)        += clk-r
+ obj-$(CONFIG_CLK_RK3328)        += clk-rk3328.o
+ obj-$(CONFIG_CLK_RK3368)        += clk-rk3368.o
+ obj-$(CONFIG_CLK_RK3399)        += clk-rk3399.o
++obj-$(CONFIG_CLK_RK3568)	+= clk-rk3568.o
+--- a/drivers/clk/rockchip/clk.h
++++ b/drivers/clk/rockchip/clk.h
+@@ -188,6 +188,34 @@ struct clk;
+ #define RK3399_PMU_CLKGATE_CON(x)	((x) * 0x4 + 0x100)
+ #define RK3399_PMU_SOFTRST_CON(x)	((x) * 0x4 + 0x110)
+ 
++#define RK3568_PLL_CON(x)		RK2928_PLL_CON(x)
++#define RK3568_MODE_CON0		0xc0
++#define RK3568_MISC_CON0		0xc4
++#define RK3568_MISC_CON1		0xc8
++#define RK3568_MISC_CON2		0xcc
++#define RK3568_GLB_CNT_TH		0xd0
++#define RK3568_GLB_SRST_FST		0xd4
++#define RK3568_GLB_SRST_SND		0xd8
++#define RK3568_GLB_RST_CON		0xdc
++#define RK3568_GLB_RST_ST		0xe0
++#define RK3568_CLKSEL_CON(x)		((x) * 0x4 + 0x100)
++#define RK3568_CLKGATE_CON(x)		((x) * 0x4 + 0x300)
++#define RK3568_SOFTRST_CON(x)		((x) * 0x4 + 0x400)
++#define RK3568_SDMMC0_CON0		0x580
++#define RK3568_SDMMC0_CON1		0x584
++#define RK3568_SDMMC1_CON0		0x588
++#define RK3568_SDMMC1_CON1		0x58c
++#define RK3568_SDMMC2_CON0		0x590
++#define RK3568_SDMMC2_CON1		0x594
++#define RK3568_EMMC_CON0		0x598
++#define RK3568_EMMC_CON1		0x59c
++
++#define RK3568_PMU_PLL_CON(x)		RK2928_PLL_CON(x)
++#define RK3568_PMU_MODE_CON0		0x80
++#define RK3568_PMU_CLKSEL_CON(x)	((x) * 0x4 + 0x100)
++#define RK3568_PMU_CLKGATE_CON(x)	((x) * 0x4 + 0x180)
++#define RK3568_PMU_SOFTRST_CON(x)	((x) * 0x4 + 0x200)
++
+ enum rockchip_pll_type {
+ 	pll_rk3036,
+ 	pll_rk3066,
+@@ -322,7 +350,7 @@ struct rockchip_cpuclk_clksel {
+ 	u32 val;
+ };
+ 
+-#define ROCKCHIP_CPUCLK_NUM_DIVIDERS	2
++#define ROCKCHIP_CPUCLK_NUM_DIVIDERS	5
+ #define ROCKCHIP_CPUCLK_MAX_CORES	4
+ struct rockchip_cpuclk_rate_table {
+ 	unsigned long prate;

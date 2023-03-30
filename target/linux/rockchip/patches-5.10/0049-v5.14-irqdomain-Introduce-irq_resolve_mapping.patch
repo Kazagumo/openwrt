@@ -1,0 +1,125 @@
+From d22558dd0a6c888b1829f9d3a0a627e330e27585 Mon Sep 17 00:00:00 2001
+From: Marc Zyngier <maz@kernel.org>
+Date: Tue, 4 May 2021 14:00:13 +0100
+Subject: [PATCH] irqdomain: Introduce irq_resolve_mapping()
+
+Rework irq_find_mapping() to return an both an irq_desc pointer,
+optionally the virtual irq number, and rename the result to
+__irq_resolve_mapping(). a new helper called irq_resolve_mapping()
+is provided for code that doesn't need the virtual irq number.
+
+irq_find_mapping() is also rewritten in terms of __irq_resolve_mapping().
+
+Signed-off-by: Marc Zyngier <maz@kernel.org>
+---
+ include/linux/irqdomain.h | 23 +++++++++++++++++++++--
+ kernel/irq/irqdomain.c    | 28 ++++++++++++++++++++--------
+ 2 files changed, 41 insertions(+), 10 deletions(-)
+
+--- a/include/linux/irqdomain.h
++++ b/include/linux/irqdomain.h
+@@ -41,6 +41,7 @@ struct irq_domain;
+ struct of_device_id;
+ struct irq_chip;
+ struct irq_data;
++struct irq_desc;
+ struct cpumask;
+ struct seq_file;
+ struct irq_affinity_desc;
+@@ -397,13 +398,31 @@ static inline unsigned int irq_create_ma
+ 	return irq_create_mapping_affinity(host, hwirq, NULL);
+ }
+ 
++extern struct irq_desc *__irq_resolve_mapping(struct irq_domain *domain,
++					      irq_hw_number_t hwirq,
++					      unsigned int *irq);
++
++static inline struct irq_desc *irq_resolve_mapping(struct irq_domain *domain,
++						   irq_hw_number_t hwirq)
++{
++	return __irq_resolve_mapping(domain, hwirq, NULL);
++}
++
+ /**
+  * irq_find_mapping() - Find a linux irq from a hw irq number.
+  * @domain: domain owning this hardware interrupt
+  * @hwirq: hardware irq number in that domain space
+  */
+-extern unsigned int irq_find_mapping(struct irq_domain *host,
+-				     irq_hw_number_t hwirq);
++static inline unsigned int irq_find_mapping(struct irq_domain *domain,
++					    irq_hw_number_t hwirq)
++{
++	unsigned int irq;
++
++	if (__irq_resolve_mapping(domain, hwirq, &irq))
++		return irq;
++
++	return 0;
++}
+ 
+ static inline unsigned int irq_linear_revmap(struct irq_domain *domain,
+ 					     irq_hw_number_t hwirq)
+--- a/kernel/irq/irqdomain.c
++++ b/kernel/irq/irqdomain.c
+@@ -895,29 +895,34 @@ void irq_dispose_mapping(unsigned int vi
+ EXPORT_SYMBOL_GPL(irq_dispose_mapping);
+ 
+ /**
+- * irq_find_mapping() - Find a linux irq from a hw irq number.
++ * __irq_resolve_mapping() - Find a linux irq from a hw irq number.
+  * @domain: domain owning this hardware interrupt
+  * @hwirq: hardware irq number in that domain space
++ * @irq: optional pointer to return the Linux irq if required
++ *
++ * Returns the interrupt descriptor.
+  */
+-unsigned int irq_find_mapping(struct irq_domain *domain,
+-			      irq_hw_number_t hwirq)
++struct irq_desc *__irq_resolve_mapping(struct irq_domain *domain,
++				       irq_hw_number_t hwirq,
++				       unsigned int *irq)
+ {
++	struct irq_desc *desc = NULL;
+ 	struct irq_data *data;
+ 
+ 	/* Look for default domain if nececssary */
+ 	if (domain == NULL)
+ 		domain = irq_default_domain;
+ 	if (domain == NULL)
+-		return 0;
++		return desc;
+ 
+ 	if (irq_domain_is_nomap(domain)) {
+ 		if (hwirq < domain->revmap_size) {
+ 			data = irq_domain_get_irq_data(domain, hwirq);
+ 			if (data && data->hwirq == hwirq)
+-				return hwirq;
++				desc = irq_data_to_desc(data);
+ 		}
+ 
+-		return 0;
++		return desc;
+ 	}
+ 
+ 	rcu_read_lock();
+@@ -926,10 +931,17 @@ unsigned int irq_find_mapping(struct irq
+ 		data = rcu_dereference(domain->revmap[hwirq]);
+ 	else
+ 		data = radix_tree_lookup(&domain->revmap_tree, hwirq);
++
++	if (likely(data)) {
++		desc = irq_data_to_desc(data);
++		if (irq)
++			*irq = data->irq;
++	}
++
+ 	rcu_read_unlock();
+-	return data ? data->irq : 0;
++	return desc;
+ }
+-EXPORT_SYMBOL_GPL(irq_find_mapping);
++EXPORT_SYMBOL_GPL(__irq_resolve_mapping);
+ 
+ /**
+  * irq_domain_xlate_onecell() - Generic xlate for direct one cell bindings

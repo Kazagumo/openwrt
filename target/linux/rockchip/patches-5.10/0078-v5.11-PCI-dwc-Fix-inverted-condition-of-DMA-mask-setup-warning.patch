@@ -1,0 +1,38 @@
+From 99e629f14b471d852d28ecf554093c4730ed0927 Mon Sep 17 00:00:00 2001
+From: Alexander Lobakin <alobakin@pm.me>
+Date: Tue, 22 Dec 2020 15:07:43 +0000
+Subject: [PATCH] PCI: dwc: Fix inverted condition of DMA mask setup warning
+
+Commit 660c486590aa ("PCI: dwc: Set 32-bit DMA mask for MSI target address
+allocation") added dma_mask_set() call to explicitly set 32-bit DMA mask
+for MSI message mapping, but for now it throws a warning on ret == 0, while
+dma_set_mask() returns 0 in case of success.
+
+Fix this by inverting the condition.
+
+[bhelgaas: join string to make it greppable]
+Fixes: 660c486590aa ("PCI: dwc: Set 32-bit DMA mask for MSI target address allocation")
+Link: https://lore.kernel.org/r/20201222150708.67983-1-alobakin@pm.me
+Signed-off-by: Alexander Lobakin <alobakin@pm.me>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+---
+ drivers/pci/controller/dwc/pcie-designware-host.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
+
+--- a/drivers/pci/controller/dwc/pcie-designware-host.c
++++ b/drivers/pci/controller/dwc/pcie-designware-host.c
+@@ -397,12 +397,8 @@ int dw_pcie_host_init(struct pcie_port *
+ 							    pp);
+ 
+ 			ret = dma_set_mask(pci->dev, DMA_BIT_MASK(32));
+-			if (!ret) {
+-				dev_warn(pci->dev,
+-					 "Failed to set DMA mask to 32-bit. "
+-					 "Devices with only 32-bit MSI support"
+-					 " may not work properly\n");
+-			}
++			if (ret)
++				dev_warn(pci->dev, "Failed to set DMA mask to 32-bit. Devices with only 32-bit MSI support may not work properly\n");
+ 
+ 			pp->msi_data = dma_map_single_attrs(pci->dev, &pp->msi_msg,
+ 						      sizeof(pp->msi_msg),

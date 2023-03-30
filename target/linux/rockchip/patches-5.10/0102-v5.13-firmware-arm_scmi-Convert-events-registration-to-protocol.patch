@@ -1,0 +1,324 @@
+From b9f7fd907c38a38aea6869c91e38a7d745825442 Mon Sep 17 00:00:00 2001
+From: Cristian Marussi <cristian.marussi@arm.com>
+Date: Tue, 16 Mar 2021 12:48:32 +0000
+Subject: [PATCH] firmware: arm_scmi: Convert events registration to protocol
+ handles
+
+Convert all refactored events registration routines to use protocol
+handles.
+
+In order to maintain bisectability and to allow protocols and drivers
+to be later ported to the new protocol handle interface one by one,
+introduce here also some transient code that will be removed later
+in order to ease such transition.
+
+Link: https://lore.kernel.org/r/20210316124903.35011-8-cristian.marussi@arm.com
+Tested-by: Florian Fainelli <f.fainelli@gmail.com>
+Signed-off-by: Cristian Marussi <cristian.marussi@arm.com>
+Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+---
+ drivers/firmware/arm_scmi/base.c    |  4 ++--
+ drivers/firmware/arm_scmi/driver.c  |  1 +
+ drivers/firmware/arm_scmi/notify.c  | 13 +++++++++----
+ drivers/firmware/arm_scmi/notify.h  |  7 ++++---
+ drivers/firmware/arm_scmi/perf.c    |  9 +++++----
+ drivers/firmware/arm_scmi/power.c   |  9 +++++----
+ drivers/firmware/arm_scmi/reset.c   |  9 +++++----
+ drivers/firmware/arm_scmi/sensors.c | 12 +++++++-----
+ drivers/firmware/arm_scmi/system.c  |  4 ++--
+ 9 files changed, 40 insertions(+), 28 deletions(-)
+
+--- a/drivers/firmware/arm_scmi/base.c
++++ b/drivers/firmware/arm_scmi/base.c
+@@ -262,7 +262,7 @@ static int scmi_base_error_notify(const
+ 	return ret;
+ }
+ 
+-static int scmi_base_set_notify_enabled(const struct scmi_handle *handle,
++static int scmi_base_set_notify_enabled(const void *handle,
+ 					u8 evt_id, u32 src_id, bool enable)
+ {
+ 	int ret;
+@@ -274,7 +274,7 @@ static int scmi_base_set_notify_enabled(
+ 	return ret;
+ }
+ 
+-static void *scmi_base_fill_custom_report(const struct scmi_handle *handle,
++static void *scmi_base_fill_custom_report(const void *handle,
+ 					  u8 evt_id, ktime_t timestamp,
+ 					  const void *payld, size_t payld_sz,
+ 					  void *report, u32 *src_id)
+--- a/drivers/firmware/arm_scmi/driver.c
++++ b/drivers/firmware/arm_scmi/driver.c
+@@ -650,6 +650,7 @@ scmi_alloc_init_protocol_instance(struct
+ 	 */
+ 	if (pi->proto->events) {
+ 		ret = scmi_register_protocol_events(handle, pi->proto->id,
++						    &pi->ph,
+ 						    pi->proto->events);
+ 		if (ret)
+ 			dev_warn(handle->dev,
+--- a/drivers/firmware/arm_scmi/notify.c
++++ b/drivers/firmware/arm_scmi/notify.c
+@@ -178,7 +178,7 @@
+ #define REVT_NOTIFY_SET_STATUS(revt, eid, sid, state)		\
+ ({								\
+ 	typeof(revt) r = revt;					\
+-	r->proto->ops->set_notify_enabled(r->proto->ni->handle,	\
++	r->proto->ops->set_notify_enabled(r->proto->ph,		\
+ 					(eid), (sid), (state));	\
+ })
+ 
+@@ -191,7 +191,7 @@
+ #define REVT_FILL_REPORT(revt, ...)				\
+ ({								\
+ 	typeof(revt) r = revt;					\
+-	r->proto->ops->fill_custom_report(r->proto->ni->handle,	\
++	r->proto->ops->fill_custom_report(r->proto->ph,		\
+ 					  __VA_ARGS__);		\
+ })
+ 
+@@ -279,6 +279,7 @@ struct scmi_registered_event;
+  *		       events' descriptors, whose fixed-size is determined at
+  *		       compile time.
+  * @registered_mtx: A mutex to protect @registered_events_handlers
++ * @ph: SCMI protocol handle reference
+  * @registered_events_handlers: An hashtable containing all events' handlers
+  *				descriptors registered for this protocol
+  *
+@@ -303,6 +304,7 @@ struct scmi_registered_events_desc {
+ 	struct scmi_registered_event	**registered_events;
+ 	/* mutex to protect registered_events_handlers */
+ 	struct mutex			registered_mtx;
++	const struct scmi_protocol_handle	*ph;
+ 	DECLARE_HASHTABLE(registered_events_handlers, SCMI_REGISTERED_HASH_SZ);
+ };
+ 
+@@ -735,6 +737,7 @@ scmi_allocate_registered_events_desc(str
+  * @handle: The handle identifying the platform instance against which the
+  *	    protocol's events are registered
+  * @proto_id: Protocol ID
++ * @ph: SCMI protocol handle.
+  * @ee: A structure describing the events supported by this protocol.
+  *
+  * Used by SCMI Protocols initialization code to register with the notification
+@@ -745,6 +748,7 @@ scmi_allocate_registered_events_desc(str
+  * Return: 0 on Success
+  */
+ int scmi_register_protocol_events(const struct scmi_handle *handle, u8 proto_id,
++				  const struct scmi_protocol_handle *ph,
+ 				  const struct scmi_protocol_events *ee)
+ {
+ 	int i;
+@@ -754,7 +758,7 @@ int scmi_register_protocol_events(const
+ 	struct scmi_notify_instance *ni;
+ 	const struct scmi_event *evt;
+ 
+-	if (!ee || !ee->ops || !ee->evts ||
++	if (!ee || !ee->ops || !ee->evts || !ph ||
+ 	    (!ee->num_sources && !ee->ops->get_num_sources))
+ 		return -EINVAL;
+ 
+@@ -768,7 +772,7 @@ int scmi_register_protocol_events(const
+ 	if (ee->num_sources) {
+ 		num_sources = ee->num_sources;
+ 	} else {
+-		int nsrc = ee->ops->get_num_sources(handle);
++		int nsrc = ee->ops->get_num_sources(ph);
+ 
+ 		if (nsrc <= 0)
+ 			return -EINVAL;
+@@ -786,6 +790,7 @@ int scmi_register_protocol_events(const
+ 	if (IS_ERR(pd))
+ 		return PTR_ERR(pd);
+ 
++	pd->ph = ph;
+ 	for (i = 0; i < ee->num_events; i++, evt++) {
+ 		struct scmi_registered_event *r_evt;
+ 
+--- a/drivers/firmware/arm_scmi/notify.h
++++ b/drivers/firmware/arm_scmi/notify.h
+@@ -50,10 +50,10 @@ struct scmi_protocol_handle;
+  *	    process context.
+  */
+ struct scmi_event_ops {
+-	int (*get_num_sources)(const struct scmi_handle *handle);
+-	int (*set_notify_enabled)(const struct scmi_handle *handle,
++	int (*get_num_sources)(const void *handle);
++	int (*set_notify_enabled)(const void *handle,
+ 				  u8 evt_id, u32 src_id, bool enabled);
+-	void *(*fill_custom_report)(const struct scmi_handle *handle,
++	void *(*fill_custom_report)(const void *handle,
+ 				    u8 evt_id, ktime_t timestamp,
+ 				    const void *payld, size_t payld_sz,
+ 				    void *report, u32 *src_id);
+@@ -82,6 +82,7 @@ void scmi_notification_exit(struct scmi_
+ 
+ struct scmi_protocol_handle;
+ int scmi_register_protocol_events(const struct scmi_handle *handle, u8 proto_id,
++				  const struct scmi_protocol_handle *ph,
+ 				  const struct scmi_protocol_events *ee);
+ void scmi_deregister_protocol_events(const struct scmi_handle *handle,
+ 				     u8 proto_id);
+--- a/drivers/firmware/arm_scmi/perf.c
++++ b/drivers/firmware/arm_scmi/perf.c
+@@ -772,7 +772,7 @@ static const struct scmi_perf_ops perf_o
+ 	.power_scale_mw_get = scmi_power_scale_mw_get,
+ };
+ 
+-static int scmi_perf_set_notify_enabled(const struct scmi_handle *handle,
++static int scmi_perf_set_notify_enabled(const void *handle,
+ 					u8 evt_id, u32 src_id, bool enable)
+ {
+ 	int ret, cmd_id;
+@@ -789,7 +789,7 @@ static int scmi_perf_set_notify_enabled(
+ 	return ret;
+ }
+ 
+-static void *scmi_perf_fill_custom_report(const struct scmi_handle *handle,
++static void *scmi_perf_fill_custom_report(const void *handle,
+ 					  u8 evt_id, ktime_t timestamp,
+ 					  const void *payld, size_t payld_sz,
+ 					  void *report, u32 *src_id)
+@@ -837,9 +837,10 @@ static void *scmi_perf_fill_custom_repor
+ 	return rep;
+ }
+ 
+-static int scmi_perf_get_num_sources(const struct scmi_handle *handle)
++static int scmi_perf_get_num_sources(const void *handle)
+ {
+-	struct scmi_perf_info *pi = handle->perf_priv;
++	struct scmi_perf_info *pi =
++		((const struct scmi_handle *)(handle))->perf_priv;
+ 
+ 	if (!pi)
+ 		return -EINVAL;
+--- a/drivers/firmware/arm_scmi/power.c
++++ b/drivers/firmware/arm_scmi/power.c
+@@ -213,7 +213,7 @@ static int scmi_power_request_notify(con
+ 	return ret;
+ }
+ 
+-static int scmi_power_set_notify_enabled(const struct scmi_handle *handle,
++static int scmi_power_set_notify_enabled(const void *handle,
+ 					 u8 evt_id, u32 src_id, bool enable)
+ {
+ 	int ret;
+@@ -226,7 +226,7 @@ static int scmi_power_set_notify_enabled
+ 	return ret;
+ }
+ 
+-static void *scmi_power_fill_custom_report(const struct scmi_handle *handle,
++static void *scmi_power_fill_custom_report(const void *handle,
+ 					   u8 evt_id, ktime_t timestamp,
+ 					   const void *payld, size_t payld_sz,
+ 					   void *report, u32 *src_id)
+@@ -246,9 +246,10 @@ static void *scmi_power_fill_custom_repo
+ 	return r;
+ }
+ 
+-static int scmi_power_get_num_sources(const struct scmi_handle *handle)
++static int scmi_power_get_num_sources(const void *handle)
+ {
+-	struct scmi_power_info *pinfo = handle->power_priv;
++	struct scmi_power_info *pinfo =
++		((const struct scmi_handle *)(handle))->power_priv;
+ 
+ 	if (!pinfo)
+ 		return -EINVAL;
+--- a/drivers/firmware/arm_scmi/reset.c
++++ b/drivers/firmware/arm_scmi/reset.c
+@@ -224,7 +224,7 @@ static int scmi_reset_notify(const struc
+ 	return ret;
+ }
+ 
+-static int scmi_reset_set_notify_enabled(const struct scmi_handle *handle,
++static int scmi_reset_set_notify_enabled(const void *handle,
+ 					 u8 evt_id, u32 src_id, bool enable)
+ {
+ 	int ret;
+@@ -237,7 +237,7 @@ static int scmi_reset_set_notify_enabled
+ 	return ret;
+ }
+ 
+-static void *scmi_reset_fill_custom_report(const struct scmi_handle *handle,
++static void *scmi_reset_fill_custom_report(const void *handle,
+ 					   u8 evt_id, ktime_t timestamp,
+ 					   const void *payld, size_t payld_sz,
+ 					   void *report, u32 *src_id)
+@@ -257,9 +257,10 @@ static void *scmi_reset_fill_custom_repo
+ 	return r;
+ }
+ 
+-static int scmi_reset_get_num_sources(const struct scmi_handle *handle)
++static int scmi_reset_get_num_sources(const void *handle)
+ {
+-	struct scmi_reset_info *pinfo = handle->reset_priv;
++	struct scmi_reset_info *pinfo =
++		((const struct scmi_handle *)(handle))->reset_priv;
+ 
+ 	if (!pinfo)
+ 		return -EINVAL;
+--- a/drivers/firmware/arm_scmi/sensors.c
++++ b/drivers/firmware/arm_scmi/sensors.c
+@@ -835,7 +835,7 @@ static const struct scmi_sensor_ops sens
+ 	.config_set = scmi_sensor_config_set,
+ };
+ 
+-static int scmi_sensor_set_notify_enabled(const struct scmi_handle *handle,
++static int scmi_sensor_set_notify_enabled(const void *handle,
+ 					  u8 evt_id, u32 src_id, bool enable)
+ {
+ 	int ret;
+@@ -860,7 +860,7 @@ static int scmi_sensor_set_notify_enable
+ 	return ret;
+ }
+ 
+-static void *scmi_sensor_fill_custom_report(const struct scmi_handle *handle,
++static void *scmi_sensor_fill_custom_report(const void *handle,
+ 					    u8 evt_id, ktime_t timestamp,
+ 					    const void *payld, size_t payld_sz,
+ 					    void *report, u32 *src_id)
+@@ -890,7 +890,8 @@ static void *scmi_sensor_fill_custom_rep
+ 		struct scmi_sensor_info *s;
+ 		const struct scmi_sensor_update_notify_payld *p = payld;
+ 		struct scmi_sensor_update_report *r = report;
+-		struct sensors_info *sinfo = handle->sensor_priv;
++		struct sensors_info *sinfo =
++			((const struct scmi_handle *)(handle))->sensor_priv;
+ 
+ 		/* payld_sz is variable for this event */
+ 		r->sensor_id = le32_to_cpu(p->sensor_id);
+@@ -920,9 +921,10 @@ static void *scmi_sensor_fill_custom_rep
+ 	return rep;
+ }
+ 
+-static int scmi_sensor_get_num_sources(const struct scmi_handle *handle)
++static int scmi_sensor_get_num_sources(const void *handle)
+ {
+-	struct sensors_info *si = handle->sensor_priv;
++	struct sensors_info *si =
++		((const struct scmi_handle *)(handle))->sensor_priv;
+ 
+ 	return si->num_sensors;
+ }
+--- a/drivers/firmware/arm_scmi/system.c
++++ b/drivers/firmware/arm_scmi/system.c
+@@ -53,7 +53,7 @@ static int scmi_system_request_notify(co
+ 	return ret;
+ }
+ 
+-static int scmi_system_set_notify_enabled(const struct scmi_handle *handle,
++static int scmi_system_set_notify_enabled(const void *handle,
+ 					  u8 evt_id, u32 src_id, bool enable)
+ {
+ 	int ret;
+@@ -65,7 +65,7 @@ static int scmi_system_set_notify_enable
+ 	return ret;
+ }
+ 
+-static void *scmi_system_fill_custom_report(const struct scmi_handle *handle,
++static void *scmi_system_fill_custom_report(const void *handle,
+ 					    u8 evt_id, ktime_t timestamp,
+ 					    const void *payld, size_t payld_sz,
+ 					    void *report, u32 *src_id)

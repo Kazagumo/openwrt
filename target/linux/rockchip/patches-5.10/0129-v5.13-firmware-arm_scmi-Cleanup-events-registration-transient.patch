@@ -1,0 +1,249 @@
+From 3cb8c95f4b3055691db500ae7ab545074a771808 Mon Sep 17 00:00:00 2001
+From: Cristian Marussi <cristian.marussi@arm.com>
+Date: Tue, 16 Mar 2021 12:48:59 +0000
+Subject: [PATCH] firmware: arm_scmi: Cleanup events registration transient
+ code
+
+Remove all the events registration code used to ease the transition to the
+new interface based on protocol handles.
+
+Link: https://lore.kernel.org/r/20210316124903.35011-35-cristian.marussi@arm.com
+Tested-by: Florian Fainelli <f.fainelli@gmail.com>
+Signed-off-by: Cristian Marussi <cristian.marussi@arm.com>
+Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+---
+ drivers/firmware/arm_scmi/base.c    |  4 ++--
+ drivers/firmware/arm_scmi/notify.h  |  6 +++---
+ drivers/firmware/arm_scmi/perf.c    |  9 ++++-----
+ drivers/firmware/arm_scmi/power.c   | 16 ++++++++--------
+ drivers/firmware/arm_scmi/reset.c   | 16 ++++++++--------
+ drivers/firmware/arm_scmi/sensors.c | 19 +++++++++----------
+ drivers/firmware/arm_scmi/system.c  | 11 ++++++-----
+ 7 files changed, 40 insertions(+), 41 deletions(-)
+
+--- a/drivers/firmware/arm_scmi/base.c
++++ b/drivers/firmware/arm_scmi/base.c
+@@ -264,7 +264,7 @@ static int scmi_base_error_notify(const
+ 	return ret;
+ }
+ 
+-static int scmi_base_set_notify_enabled(const void *ph,
++static int scmi_base_set_notify_enabled(const struct scmi_protocol_handle *ph,
+ 					u8 evt_id, u32 src_id, bool enable)
+ {
+ 	int ret;
+@@ -276,7 +276,7 @@ static int scmi_base_set_notify_enabled(
+ 	return ret;
+ }
+ 
+-static void *scmi_base_fill_custom_report(const void *ph,
++static void *scmi_base_fill_custom_report(const struct scmi_protocol_handle *ph,
+ 					  u8 evt_id, ktime_t timestamp,
+ 					  const void *payld, size_t payld_sz,
+ 					  void *report, u32 *src_id)
+--- a/drivers/firmware/arm_scmi/notify.h
++++ b/drivers/firmware/arm_scmi/notify.h
+@@ -50,10 +50,10 @@ struct scmi_protocol_handle;
+  *	    process context.
+  */
+ struct scmi_event_ops {
+-	int (*get_num_sources)(const void *handle);
+-	int (*set_notify_enabled)(const void *handle,
++	int (*get_num_sources)(const struct scmi_protocol_handle *ph);
++	int (*set_notify_enabled)(const struct scmi_protocol_handle *ph,
+ 				  u8 evt_id, u32 src_id, bool enabled);
+-	void *(*fill_custom_report)(const void *handle,
++	void *(*fill_custom_report)(const struct scmi_protocol_handle *ph,
+ 				    u8 evt_id, ktime_t timestamp,
+ 				    const void *payld, size_t payld_sz,
+ 				    void *report, u32 *src_id);
+--- a/drivers/firmware/arm_scmi/perf.c
++++ b/drivers/firmware/arm_scmi/perf.c
+@@ -769,7 +769,7 @@ static const struct scmi_perf_proto_ops
+ 	.power_scale_mw_get = scmi_power_scale_mw_get,
+ };
+ 
+-static int scmi_perf_set_notify_enabled(const void *ph,
++static int scmi_perf_set_notify_enabled(const struct scmi_protocol_handle *ph,
+ 					u8 evt_id, u32 src_id, bool enable)
+ {
+ 	int ret, cmd_id;
+@@ -786,7 +786,7 @@ static int scmi_perf_set_notify_enabled(
+ 	return ret;
+ }
+ 
+-static void *scmi_perf_fill_custom_report(const void *ph,
++static void *scmi_perf_fill_custom_report(const struct scmi_protocol_handle *ph,
+ 					  u8 evt_id, ktime_t timestamp,
+ 					  const void *payld, size_t payld_sz,
+ 					  void *report, u32 *src_id)
+@@ -834,10 +834,9 @@ static void *scmi_perf_fill_custom_repor
+ 	return rep;
+ }
+ 
+-static int scmi_perf_get_num_sources(const void *ph)
++static int scmi_perf_get_num_sources(const struct scmi_protocol_handle *ph)
+ {
+-	struct scmi_perf_info *pi =
+-		((const struct scmi_protocol_handle *)ph)->get_priv(ph);
++	struct scmi_perf_info *pi = ph->get_priv(ph);
+ 
+ 	if (!pi)
+ 		return -EINVAL;
+--- a/drivers/firmware/arm_scmi/power.c
++++ b/drivers/firmware/arm_scmi/power.c
+@@ -211,7 +211,7 @@ static int scmi_power_request_notify(con
+ 	return ret;
+ }
+ 
+-static int scmi_power_set_notify_enabled(const void *ph,
++static int scmi_power_set_notify_enabled(const struct scmi_protocol_handle *ph,
+ 					 u8 evt_id, u32 src_id, bool enable)
+ {
+ 	int ret;
+@@ -224,10 +224,11 @@ static int scmi_power_set_notify_enabled
+ 	return ret;
+ }
+ 
+-static void *scmi_power_fill_custom_report(const void *ph,
+-					   u8 evt_id, ktime_t timestamp,
+-					   const void *payld, size_t payld_sz,
+-					   void *report, u32 *src_id)
++static void *
++scmi_power_fill_custom_report(const struct scmi_protocol_handle *ph,
++			      u8 evt_id, ktime_t timestamp,
++			      const void *payld, size_t payld_sz,
++			      void *report, u32 *src_id)
+ {
+ 	const struct scmi_power_state_notify_payld *p = payld;
+ 	struct scmi_power_state_changed_report *r = report;
+@@ -244,10 +245,9 @@ static void *scmi_power_fill_custom_repo
+ 	return r;
+ }
+ 
+-static int scmi_power_get_num_sources(const void *ph)
++static int scmi_power_get_num_sources(const struct scmi_protocol_handle *ph)
+ {
+-	struct scmi_power_info *pinfo =
+-		((const struct scmi_protocol_handle *)ph)->get_priv(ph);
++	struct scmi_power_info *pinfo = ph->get_priv(ph);
+ 
+ 	if (!pinfo)
+ 		return -EINVAL;
+--- a/drivers/firmware/arm_scmi/reset.c
++++ b/drivers/firmware/arm_scmi/reset.c
+@@ -225,7 +225,7 @@ static int scmi_reset_notify(const struc
+ 	return ret;
+ }
+ 
+-static int scmi_reset_set_notify_enabled(const void *ph,
++static int scmi_reset_set_notify_enabled(const struct scmi_protocol_handle *ph,
+ 					 u8 evt_id, u32 src_id, bool enable)
+ {
+ 	int ret;
+@@ -238,10 +238,11 @@ static int scmi_reset_set_notify_enabled
+ 	return ret;
+ }
+ 
+-static void *scmi_reset_fill_custom_report(const void *ph,
+-					   u8 evt_id, ktime_t timestamp,
+-					   const void *payld, size_t payld_sz,
+-					   void *report, u32 *src_id)
++static void *
++scmi_reset_fill_custom_report(const struct scmi_protocol_handle *ph,
++			      u8 evt_id, ktime_t timestamp,
++			      const void *payld, size_t payld_sz,
++			      void *report, u32 *src_id)
+ {
+ 	const struct scmi_reset_issued_notify_payld *p = payld;
+ 	struct scmi_reset_issued_report *r = report;
+@@ -258,10 +259,9 @@ static void *scmi_reset_fill_custom_repo
+ 	return r;
+ }
+ 
+-static int scmi_reset_get_num_sources(const void *ph)
++static int scmi_reset_get_num_sources(const struct scmi_protocol_handle *ph)
+ {
+-	struct scmi_reset_info *pinfo =
+-		((const struct scmi_protocol_handle *)ph)->get_priv(ph);
++	struct scmi_reset_info *pinfo = ph->get_priv(ph);
+ 
+ 	if (!pinfo)
+ 		return -EINVAL;
+--- a/drivers/firmware/arm_scmi/sensors.c
++++ b/drivers/firmware/arm_scmi/sensors.c
+@@ -834,7 +834,7 @@ static const struct scmi_sensor_proto_op
+ 	.config_set = scmi_sensor_config_set,
+ };
+ 
+-static int scmi_sensor_set_notify_enabled(const void *ph,
++static int scmi_sensor_set_notify_enabled(const struct scmi_protocol_handle *ph,
+ 					  u8 evt_id, u32 src_id, bool enable)
+ {
+ 	int ret;
+@@ -858,10 +858,11 @@ static int scmi_sensor_set_notify_enable
+ 	return ret;
+ }
+ 
+-static void *scmi_sensor_fill_custom_report(const void *ph,
+-					    u8 evt_id, ktime_t timestamp,
+-					    const void *payld, size_t payld_sz,
+-					    void *report, u32 *src_id)
++static void *
++scmi_sensor_fill_custom_report(const struct scmi_protocol_handle *ph,
++			       u8 evt_id, ktime_t timestamp,
++			       const void *payld, size_t payld_sz,
++			       void *report, u32 *src_id)
+ {
+ 	void *rep = NULL;
+ 
+@@ -888,8 +889,7 @@ static void *scmi_sensor_fill_custom_rep
+ 		struct scmi_sensor_info *s;
+ 		const struct scmi_sensor_update_notify_payld *p = payld;
+ 		struct scmi_sensor_update_report *r = report;
+-		struct sensors_info *sinfo =
+-			((const struct scmi_protocol_handle *)ph)->get_priv(ph);
++		struct sensors_info *sinfo = ph->get_priv(ph);
+ 
+ 		/* payld_sz is variable for this event */
+ 		r->sensor_id = le32_to_cpu(p->sensor_id);
+@@ -919,10 +919,9 @@ static void *scmi_sensor_fill_custom_rep
+ 	return rep;
+ }
+ 
+-static int scmi_sensor_get_num_sources(const void *ph)
++static int scmi_sensor_get_num_sources(const struct scmi_protocol_handle *ph)
+ {
+-	struct sensors_info *si =
+-		((const struct scmi_protocol_handle *)ph)->get_priv(ph);
++	struct sensors_info *si = ph->get_priv(ph);
+ 
+ 	return si->num_sensors;
+ }
+--- a/drivers/firmware/arm_scmi/system.c
++++ b/drivers/firmware/arm_scmi/system.c
+@@ -53,7 +53,7 @@ static int scmi_system_request_notify(co
+ 	return ret;
+ }
+ 
+-static int scmi_system_set_notify_enabled(const void *ph,
++static int scmi_system_set_notify_enabled(const struct scmi_protocol_handle *ph,
+ 					  u8 evt_id, u32 src_id, bool enable)
+ {
+ 	int ret;
+@@ -65,10 +65,11 @@ static int scmi_system_set_notify_enable
+ 	return ret;
+ }
+ 
+-static void *scmi_system_fill_custom_report(const void *ph,
+-					    u8 evt_id, ktime_t timestamp,
+-					    const void *payld, size_t payld_sz,
+-					    void *report, u32 *src_id)
++static void *
++scmi_system_fill_custom_report(const struct scmi_protocol_handle *ph,
++			       u8 evt_id, ktime_t timestamp,
++			       const void *payld, size_t payld_sz,
++			       void *report, u32 *src_id)
+ {
+ 	const struct scmi_system_power_state_notifier_payld *p = payld;
+ 	struct scmi_system_power_state_notifier_report *r = report;

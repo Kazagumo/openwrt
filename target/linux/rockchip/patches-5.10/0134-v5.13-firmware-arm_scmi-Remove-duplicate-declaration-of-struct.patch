@@ -1,0 +1,29 @@
+From 03f840c49207e8c125b3df8c29c13137c6675d42 Mon Sep 17 00:00:00 2001
+From: Wan Jiabing <wanjiabing@vivo.com>
+Date: Tue, 27 Apr 2021 11:30:31 +0800
+Subject: [PATCH] firmware: arm_scmi: Remove duplicate declaration of struct
+ scmi_protocol_handle
+
+struct scmi_protocol_handle is declared twice, let us remove the duplicate
+declaration.
+
+Link: https://lore.kernel.org/r/20210427033031.4580-1-wanjiabing@vivo.com
+Reviewed-by: Cristian Marussi <cristian.marussi@arm.com>
+Signed-off-by: Wan Jiabing <wanjiabing@vivo.com>
+[sudeep.holla: minor updates to the title and the changelog]
+Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+---
+ drivers/firmware/arm_scmi/notify.h | 2 --
+ 1 file changed, 2 deletions(-)
+
+--- a/drivers/firmware/arm_scmi/notify.h
++++ b/drivers/firmware/arm_scmi/notify.h
+@@ -79,8 +79,6 @@ struct scmi_protocol_events {
+ 
+ int scmi_notification_init(struct scmi_handle *handle);
+ void scmi_notification_exit(struct scmi_handle *handle);
+-
+-struct scmi_protocol_handle;
+ int scmi_register_protocol_events(const struct scmi_handle *handle, u8 proto_id,
+ 				  const struct scmi_protocol_handle *ph,
+ 				  const struct scmi_protocol_events *ee);

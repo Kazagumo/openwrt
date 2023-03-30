@@ -1,0 +1,209 @@
+From 4b522bbf80f67ff17c0cc1fe66654202810b4482 Mon Sep 17 00:00:00 2001
+From: Jianqun Xu <jay.xu@rock-chips.com>
+Date: Mon, 16 Aug 2021 09:19:40 +0800
+Subject: [PATCH] pinctrl/rockchip: always enable clock for gpio controller
+
+Since gate and ungate pclk of gpio has very litte benifit for system
+power consumption, just keep it always ungate.
+
+Signed-off-by: Jianqun Xu <jay.xu@rock-chips.com>
+Link: https://lore.kernel.org/r/20210816011948.1118959-2-jay.xu@rock-chips.com
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/pinctrl/pinctrl-rockchip.c | 40 +-----------------------------
+ 1 file changed, 1 insertion(+), 39 deletions(-)
+
+--- a/drivers/pinctrl/pinctrl-rockchip.c
++++ b/drivers/pinctrl/pinctrl-rockchip.c
+@@ -2314,17 +2314,8 @@ static int rockchip_gpio_get_direction(s
+ {
+ 	struct rockchip_pin_bank *bank = gpiochip_get_data(chip);
+ 	u32 data;
+-	int ret;
+ 
+-	ret = clk_enable(bank->clk);
+-	if (ret < 0) {
+-		dev_err(bank->drvdata->dev,
+-			"failed to enable clock for bank %s\n", bank->name);
+-		return ret;
+-	}
+ 	data = readl_relaxed(bank->reg_base + GPIO_SWPORT_DDR);
+-	clk_disable(bank->clk);
+-
+ 	if (data & BIT(offset))
+ 		return GPIO_LINE_DIRECTION_OUT;
+ 
+@@ -2350,7 +2341,6 @@ static int _rockchip_pmx_gpio_set_direct
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	clk_enable(bank->clk);
+ 	raw_spin_lock_irqsave(&bank->slock, flags);
+ 
+ 	data = readl_relaxed(bank->reg_base + GPIO_SWPORT_DDR);
+@@ -2362,7 +2352,6 @@ static int _rockchip_pmx_gpio_set_direct
+ 	writel_relaxed(data, bank->reg_base + GPIO_SWPORT_DDR);
+ 
+ 	raw_spin_unlock_irqrestore(&bank->slock, flags);
+-	clk_disable(bank->clk);
+ 
+ 	return 0;
+ }
+@@ -2813,7 +2802,6 @@ static void rockchip_gpio_set(struct gpi
+ 	unsigned long flags;
+ 	u32 data;
+ 
+-	clk_enable(bank->clk);
+ 	raw_spin_lock_irqsave(&bank->slock, flags);
+ 
+ 	data = readl(reg);
+@@ -2823,7 +2811,6 @@ static void rockchip_gpio_set(struct gpi
+ 	writel(data, reg);
+ 
+ 	raw_spin_unlock_irqrestore(&bank->slock, flags);
+-	clk_disable(bank->clk);
+ }
+ 
+ /*
+@@ -2835,9 +2822,7 @@ static int rockchip_gpio_get(struct gpio
+ 	struct rockchip_pin_bank *bank = gpiochip_get_data(gc);
+ 	u32 data;
+ 
+-	clk_enable(bank->clk);
+ 	data = readl(bank->reg_base + GPIO_EXT_PORT);
+-	clk_disable(bank->clk);
+ 	data >>= offset;
+ 	data &= 1;
+ 	return data;
+@@ -2873,7 +2858,6 @@ static void rockchip_gpio_set_debounce(s
+ 	unsigned long flags;
+ 	u32 data;
+ 
+-	clk_enable(bank->clk);
+ 	raw_spin_lock_irqsave(&bank->slock, flags);
+ 
+ 	data = readl(reg);
+@@ -2884,7 +2868,6 @@ static void rockchip_gpio_set_debounce(s
+ 	writel(data, reg);
+ 
+ 	raw_spin_unlock_irqrestore(&bank->slock, flags);
+-	clk_disable(bank->clk);
+ }
+ 
+ /*
+@@ -2929,9 +2912,7 @@ static int rockchip_gpio_to_irq(struct g
+ 	if (!bank->domain)
+ 		return -ENXIO;
+ 
+-	clk_enable(bank->clk);
+ 	virq = irq_create_mapping(bank->domain, offset);
+-	clk_disable(bank->clk);
+ 
+ 	return (virq) ? : -ENXIO;
+ }
+@@ -3030,7 +3011,6 @@ static int rockchip_irq_set_type(struct
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	clk_enable(bank->clk);
+ 	raw_spin_lock_irqsave(&bank->slock, flags);
+ 
+ 	data = readl_relaxed(bank->reg_base + GPIO_SWPORT_DDR);
+@@ -3088,7 +3068,6 @@ static int rockchip_irq_set_type(struct
+ 	default:
+ 		irq_gc_unlock(gc);
+ 		raw_spin_unlock_irqrestore(&bank->slock, flags);
+-		clk_disable(bank->clk);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -3097,7 +3076,6 @@ static int rockchip_irq_set_type(struct
+ 
+ 	irq_gc_unlock(gc);
+ 	raw_spin_unlock_irqrestore(&bank->slock, flags);
+-	clk_disable(bank->clk);
+ 
+ 	return 0;
+ }
+@@ -3107,10 +3085,8 @@ static void rockchip_irq_suspend(struct
+ 	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
+ 	struct rockchip_pin_bank *bank = gc->private;
+ 
+-	clk_enable(bank->clk);
+ 	bank->saved_masks = irq_reg_readl(gc, GPIO_INTMASK);
+ 	irq_reg_writel(gc, ~gc->wake_active, GPIO_INTMASK);
+-	clk_disable(bank->clk);
+ }
+ 
+ static void rockchip_irq_resume(struct irq_data *d)
+@@ -3118,9 +3094,7 @@ static void rockchip_irq_resume(struct i
+ 	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
+ 	struct rockchip_pin_bank *bank = gc->private;
+ 
+-	clk_enable(bank->clk);
+ 	irq_reg_writel(gc, bank->saved_masks, GPIO_INTMASK);
+-	clk_disable(bank->clk);
+ }
+ 
+ static void rockchip_irq_enable(struct irq_data *d)
+@@ -3128,7 +3102,6 @@ static void rockchip_irq_enable(struct i
+ 	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
+ 	struct rockchip_pin_bank *bank = gc->private;
+ 
+-	clk_enable(bank->clk);
+ 	irq_gc_mask_clr_bit(d);
+ }
+ 
+@@ -3138,7 +3111,6 @@ static void rockchip_irq_disable(struct
+ 	struct rockchip_pin_bank *bank = gc->private;
+ 
+ 	irq_gc_mask_set_bit(d);
+-	clk_disable(bank->clk);
+ }
+ 
+ static int rockchip_interrupts_register(struct platform_device *pdev,
+@@ -3158,19 +3130,11 @@ static int rockchip_interrupts_register(
+ 			continue;
+ 		}
+ 
+-		ret = clk_enable(bank->clk);
+-		if (ret) {
+-			dev_err(&pdev->dev, "failed to enable clock for bank %s\n",
+-				bank->name);
+-			continue;
+-		}
+-
+ 		bank->domain = irq_domain_add_linear(bank->of_node, 32,
+ 						&irq_generic_chip_ops, NULL);
+ 		if (!bank->domain) {
+ 			dev_warn(&pdev->dev, "could not initialize irq domain for bank %s\n",
+ 				 bank->name);
+-			clk_disable(bank->clk);
+ 			continue;
+ 		}
+ 
+@@ -3181,7 +3145,6 @@ static int rockchip_interrupts_register(
+ 			dev_err(&pdev->dev, "could not alloc generic chips for bank %s\n",
+ 				bank->name);
+ 			irq_domain_remove(bank->domain);
+-			clk_disable(bank->clk);
+ 			continue;
+ 		}
+ 
+@@ -3213,7 +3176,6 @@ static int rockchip_interrupts_register(
+ 
+ 		irq_set_chained_handler_and_data(bank->irq,
+ 						 rockchip_irq_demux, bank);
+-		clk_disable(bank->clk);
+ 	}
+ 
+ 	return 0;
+@@ -3332,7 +3294,7 @@ static int rockchip_get_bank_data(struct
+ 	if (IS_ERR(bank->clk))
+ 		return PTR_ERR(bank->clk);
+ 
+-	return clk_prepare(bank->clk);
++	return clk_prepare_enable(bank->clk);
+ }
+ 
+ static const struct of_device_id rockchip_pinctrl_dt_match[];

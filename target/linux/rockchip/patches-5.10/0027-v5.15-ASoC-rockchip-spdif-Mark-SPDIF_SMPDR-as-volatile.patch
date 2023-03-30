@@ -1,0 +1,33 @@
+From 023a3f3a1c4f9be9cc1ae92579ba816120fb5807 Mon Sep 17 00:00:00 2001
+From: Sugar Zhang <sugar.zhang@rock-chips.com>
+Date: Tue, 24 Aug 2021 18:15:59 +0800
+Subject: [PATCH] ASoC: rockchip: spdif: Mark SPDIF_SMPDR as volatile
+
+This patch marks SPDIF_SMPDR as volatile to make it resaonable,
+which also requires marking it as readable, even though it isn't.
+
+Signed-off-by: Sugar Zhang <sugar.zhang@rock-chips.com>
+Link: https://lore.kernel.org/r/1629800162-12824-2-git-send-email-sugar.zhang@rock-chips.com
+Signed-off-by: Mark Brown <broonie@kernel.org>
+---
+ sound/soc/rockchip/rockchip_spdif.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/sound/soc/rockchip/rockchip_spdif.c
++++ b/sound/soc/rockchip/rockchip_spdif.c
+@@ -247,6 +247,7 @@ static bool rk_spdif_rd_reg(struct devic
+ 	case SPDIF_INTCR:
+ 	case SPDIF_INTSR:
+ 	case SPDIF_XFER:
++	case SPDIF_SMPDR:
+ 		return true;
+ 	default:
+ 		return false;
+@@ -258,6 +259,7 @@ static bool rk_spdif_volatile_reg(struct
+ 	switch (reg) {
+ 	case SPDIF_INTSR:
+ 	case SPDIF_SDBLR:
++	case SPDIF_SMPDR:
+ 		return true;
+ 	default:
+ 		return false;

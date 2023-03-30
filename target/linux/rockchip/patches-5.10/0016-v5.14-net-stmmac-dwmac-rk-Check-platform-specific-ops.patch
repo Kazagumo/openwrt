@@ -1,0 +1,70 @@
+From 37c80d15ff4bf7526caf5de8b8cab17ac8769d4c Mon Sep 17 00:00:00 2001
+From: David Wu <david.wu@rock-chips.com>
+Date: Mon, 17 May 2021 12:40:35 -0300
+Subject: [PATCH] net: stmmac: dwmac-rk: Check platform-specific ops
+
+Add a check for non-null struct rk_gmac_ops for the
+configured PHY interface mode, failing if unsupported.
+
+Signed-off-by: David Wu <david.wu@rock-chips.com>
+[Ezequiel: Refactor so it fails if unsupported]
+Signed-off-by: Ezequiel Garcia <ezequiel@collabora.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ .../net/ethernet/stmicro/stmmac/dwmac-rk.c    | 31 +++++++++++++++++--
+ 1 file changed, 29 insertions(+), 2 deletions(-)
+
+--- a/drivers/net/ethernet/stmicro/stmmac/dwmac-rk.c
++++ b/drivers/net/ethernet/stmicro/stmmac/dwmac-rk.c
+@@ -1294,11 +1294,36 @@ static struct rk_priv_data *rk_gmac_setu
+ 	return bsp_priv;
+ }
+ 
++static int rk_gmac_check_ops(struct rk_priv_data *bsp_priv)
++{
++	switch (bsp_priv->phy_iface) {
++	case PHY_INTERFACE_MODE_RGMII:
++	case PHY_INTERFACE_MODE_RGMII_ID:
++	case PHY_INTERFACE_MODE_RGMII_RXID:
++	case PHY_INTERFACE_MODE_RGMII_TXID:
++		if (!bsp_priv->ops->set_to_rgmii)
++			return -EINVAL;
++		break;
++	case PHY_INTERFACE_MODE_RMII:
++		if (!bsp_priv->ops->set_to_rmii)
++			return -EINVAL;
++		break;
++	default:
++		dev_err(&bsp_priv->pdev->dev,
++			"unsupported interface %d", bsp_priv->phy_iface);
++	}
++	return 0;
++}
++
+ static int rk_gmac_powerup(struct rk_priv_data *bsp_priv)
+ {
+ 	int ret;
+ 	struct device *dev = &bsp_priv->pdev->dev;
+ 
++	ret = rk_gmac_check_ops(bsp_priv);
++	if (ret)
++		return ret;
++
+ 	ret = gmac_clk_enable(bsp_priv, true);
+ 	if (ret)
+ 		return ret;
+@@ -1365,10 +1390,12 @@ static void rk_fix_speed(void *priv, uns
+ 	case PHY_INTERFACE_MODE_RGMII_ID:
+ 	case PHY_INTERFACE_MODE_RGMII_RXID:
+ 	case PHY_INTERFACE_MODE_RGMII_TXID:
+-		bsp_priv->ops->set_rgmii_speed(bsp_priv, speed);
++		if (bsp_priv->ops->set_rgmii_speed)
++			bsp_priv->ops->set_rgmii_speed(bsp_priv, speed);
+ 		break;
+ 	case PHY_INTERFACE_MODE_RMII:
+-		bsp_priv->ops->set_rmii_speed(bsp_priv, speed);
++		if (bsp_priv->ops->set_rmii_speed)
++			bsp_priv->ops->set_rmii_speed(bsp_priv, speed);
+ 		break;
+ 	default:
+ 		dev_err(dev, "unsupported interface %d", bsp_priv->phy_iface);

@@ -1,0 +1,53 @@
+From b98cf55ec0bd88bdba725845c743e94ecaf57b7e Mon Sep 17 00:00:00 2001
+From: Cristian Marussi <cristian.marussi@arm.com>
+Date: Mon, 12 Jul 2021 15:35:04 +0100
+Subject: [PATCH] firmware: arm_scmi: Fix kernel doc warnings about return
+ values
+
+Kernel doc validation script still complains about the following:
+
+|No description found for return value of 'scmi_get_protocol_device'
+|No description found for return value of 'scmi_devm_notifier_register'
+|No description found for return value of 'scmi_devm_notifier_unregister'
+
+Fix adding missing Return kernel-doc statements.
+
+Link: https://lore.kernel.org/r/20210712143504.33541-1-cristian.marussi@arm.com
+Signed-off-by: Cristian Marussi <cristian.marussi@arm.com>
+Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+---
+ drivers/firmware/arm_scmi/driver.c | 2 ++
+ drivers/firmware/arm_scmi/notify.c | 4 ++++
+ 2 files changed, 6 insertions(+)
+
+--- a/drivers/firmware/arm_scmi/driver.c
++++ b/drivers/firmware/arm_scmi/driver.c
+@@ -1143,6 +1143,8 @@ scmi_txrx_setup(struct scmi_info *info,
+  * @proto_id and @name: if device was still not existent it is created as a
+  * child of the specified SCMI instance @info and its transport properly
+  * initialized as usual.
++ *
++ * Return: A properly initialized scmi device, NULL otherwise.
+  */
+ static inline struct scmi_device *
+ scmi_get_protocol_device(struct device_node *np, struct scmi_info *info,
+--- a/drivers/firmware/arm_scmi/notify.c
++++ b/drivers/firmware/arm_scmi/notify.c
+@@ -1457,6 +1457,8 @@ static void scmi_devm_release_notifier(s
+  *
+  * Generic devres managed helper to register a notifier_block against a
+  * protocol event.
++ *
++ * Return: 0 on Success
+  */
+ static int scmi_devm_notifier_register(struct scmi_device *sdev,
+ 				       u8 proto_id, u8 evt_id,
+@@ -1523,6 +1525,8 @@ static int scmi_devm_notifier_match(stru
+  * Generic devres managed helper to explicitly un-register a notifier_block
+  * against a protocol event, which was previously registered using the above
+  * @scmi_devm_notifier_register.
++ *
++ * Return: 0 on Success
+  */
+ static int scmi_devm_notifier_unregister(struct scmi_device *sdev,
+ 					 u8 proto_id, u8 evt_id,

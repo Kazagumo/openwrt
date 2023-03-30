@@ -1,0 +1,126 @@
+From ceac257db055b8d13aef6fa83e9f2b6733c23532 Mon Sep 17 00:00:00 2001
+From: Cristian Marussi <cristian.marussi@arm.com>
+Date: Tue, 3 Aug 2021 14:10:12 +0100
+Subject: [PATCH] firmware: arm_scmi: Add optional transport_init/exit support
+
+Some SCMI transport could need to perform some transport specific setup
+before they can be used by the SCMI core transport layer: typically this
+early setup consists in registering with some other kernel subsystem.
+
+Add the optional capability for a transport to provide a couple of init
+and exit functions that are assured to be called early during the SCMI
+core initialization phase, well before the SCMI core probing step.
+
+[ Peter: Adapted RFC patch by Cristian for submission to upstream. ]
+
+Link: https://lore.kernel.org/r/20210803131024.40280-4-cristian.marussi@arm.com
+Signed-off-by: Peter Hilber <peter.hilber@opensynergy.com>
+[ Cristian: Fixed scmi_transports_exit point of invocation ]
+Signed-off-by: Cristian Marussi <cristian.marussi@arm.com>
+Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+---
+ drivers/firmware/arm_scmi/common.h |  8 +++++
+ drivers/firmware/arm_scmi/driver.c | 57 ++++++++++++++++++++++++++++++
+ 2 files changed, 65 insertions(+)
+
+--- a/drivers/firmware/arm_scmi/common.h
++++ b/drivers/firmware/arm_scmi/common.h
+@@ -321,6 +321,12 @@ struct scmi_device *scmi_child_dev_find(
+ /**
+  * struct scmi_desc - Description of SoC integration
+  *
++ * @transport_init: An optional function that a transport can provide to
++ *		    initialize some transport-specific setup during SCMI core
++ *		    initialization, so ahead of SCMI core probing.
++ * @transport_exit: An optional function that a transport can provide to
++ *		    de-initialize some transport-specific setup during SCMI core
++ *		    de-initialization, so after SCMI core removal.
+  * @ops: Pointer to the transport specific ops structure
+  * @max_rx_timeout_ms: Timeout for communication with SoC (in Milliseconds)
+  * @max_msg: Maximum number of messages that can be pending
+@@ -328,6 +334,8 @@ struct scmi_device *scmi_child_dev_find(
+  * @max_msg_size: Maximum size of data per message that can be handled.
+  */
+ struct scmi_desc {
++	int (*transport_init)(void);
++	void (*transport_exit)(void);
+ 	const struct scmi_transport_ops *ops;
+ 	int max_rx_timeout_ms;
+ 	int max_msg;
+--- a/drivers/firmware/arm_scmi/driver.c
++++ b/drivers/firmware/arm_scmi/driver.c
+@@ -1586,10 +1586,65 @@ static struct platform_driver scmi_drive
+ 	.remove = scmi_remove,
+ };
+ 
++/**
++ * __scmi_transports_setup  - Common helper to call transport-specific
++ * .init/.exit code if provided.
++ *
++ * @init: A flag to distinguish between init and exit.
++ *
++ * Note that, if provided, we invoke .init/.exit functions for all the
++ * transports currently compiled in.
++ *
++ * Return: 0 on Success.
++ */
++static inline int __scmi_transports_setup(bool init)
++{
++	int ret = 0;
++	const struct of_device_id *trans;
++
++	for (trans = scmi_of_match; trans->data; trans++) {
++		const struct scmi_desc *tdesc = trans->data;
++
++		if ((init && !tdesc->transport_init) ||
++		    (!init && !tdesc->transport_exit))
++			continue;
++
++		if (init)
++			ret = tdesc->transport_init();
++		else
++			tdesc->transport_exit();
++
++		if (ret) {
++			pr_err("SCMI transport %s FAILED initialization!\n",
++			       trans->compatible);
++			break;
++		}
++	}
++
++	return ret;
++}
++
++static int __init scmi_transports_init(void)
++{
++	return __scmi_transports_setup(true);
++}
++
++static void __exit scmi_transports_exit(void)
++{
++	__scmi_transports_setup(false);
++}
++
+ static int __init scmi_driver_init(void)
+ {
++	int ret;
++
+ 	scmi_bus_init();
+ 
++	/* Initialize any compiled-in transport which provided an init/exit */
++	ret = scmi_transports_init();
++	if (ret)
++		return ret;
++
+ 	scmi_base_register();
+ 
+ 	scmi_clock_register();
+@@ -1618,6 +1673,8 @@ static void __exit scmi_driver_exit(void
+ 
+ 	scmi_bus_exit();
+ 
++	scmi_transports_exit();
++
+ 	platform_driver_unregister(&scmi_driver);
+ }
+ module_exit(scmi_driver_exit);

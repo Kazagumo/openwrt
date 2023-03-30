@@ -1,0 +1,36 @@
+From e30d91d4ffda0b30839bb5e7d2a123654de95045 Mon Sep 17 00:00:00 2001
+From: Cristian Marussi <cristian.marussi@arm.com>
+Date: Sun, 6 Jun 2021 23:12:24 +0100
+Subject: [PATCH] firmware: arm_scmi: Move reinit_completion from scmi_xfer_get
+ to do_xfer
+
+Re-using timed out xfers in a loop can lead to issue if completion was
+not properly reinitialized. Move reinit_completion from scmi_xfer_get to
+do_xfer to avoid the issue.
+
+Link: https://lore.kernel.org/r/20210606221232.33768-3-cristian.marussi@arm.com
+Signed-off-by: Cristian Marussi <cristian.marussi@arm.com>
+[sudeep.holla: moved reinit_completion instead of adding another one]
+Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+---
+ drivers/firmware/arm_scmi/driver.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/firmware/arm_scmi/driver.c
++++ b/drivers/firmware/arm_scmi/driver.c
+@@ -242,7 +242,6 @@ static struct scmi_xfer *scmi_xfer_get(c
+ 
+ 	xfer = &minfo->xfer_block[xfer_id];
+ 	xfer->hdr.seq = xfer_id;
+-	reinit_completion(&xfer->done);
+ 	xfer->transfer_id = atomic_inc_return(&transfer_last_id);
+ 
+ 	return xfer;
+@@ -439,6 +438,7 @@ static int do_xfer(const struct scmi_pro
+ 	 * the scmi_xfer structure.
+ 	 */
+ 	xfer->hdr.protocol_id = pi->proto->id;
++	reinit_completion(&xfer->done);
+ 
+ 	cinfo = idr_find(&info->tx_idr, xfer->hdr.protocol_id);
+ 	if (unlikely(!cinfo))

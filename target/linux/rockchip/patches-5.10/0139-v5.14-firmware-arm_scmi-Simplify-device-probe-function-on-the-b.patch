@@ -1,0 +1,35 @@
+From 38e0c99249f8f12e1450234a0f7fb357a1b73843 Mon Sep 17 00:00:00 2001
+From: Sudeep Holla <sudeep.holla@arm.com>
+Date: Thu, 24 Jun 2021 10:50:58 +0100
+Subject: [PATCH] firmware: arm_scmi: Simplify device probe function on the bus
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+When the driver core calls the probe callback it already checked that
+the devices match, so there is no need to call the match callback again.
+
+Link: https://lore.kernel.org/r/20210624095059.4010157-1-sudeep.holla@arm.com
+Suggested-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Tested-by: Cristian Marussi <cristian.marussi@arm.com>
+Reviewed-by: Cristian Marussi <cristian.marussi@arm.com>
+Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+---
+ drivers/firmware/arm_scmi/bus.c | 5 -----
+ 1 file changed, 5 deletions(-)
+
+--- a/drivers/firmware/arm_scmi/bus.c
++++ b/drivers/firmware/arm_scmi/bus.c
+@@ -104,11 +104,6 @@ static int scmi_dev_probe(struct device
+ {
+ 	struct scmi_driver *scmi_drv = to_scmi_driver(dev->driver);
+ 	struct scmi_device *scmi_dev = to_scmi_dev(dev);
+-	const struct scmi_device_id *id;
+-
+-	id = scmi_dev_match_id(scmi_dev, scmi_drv);
+-	if (!id)
+-		return -ENODEV;
+ 
+ 	if (!scmi_dev->handle)
+ 		return -EPROBE_DEFER;

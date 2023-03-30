@@ -1,0 +1,88 @@
+From 48b15a7921d60680babe59f64e127816585a585c Mon Sep 17 00:00:00 2001
+From: Marc Zyngier <maz@kernel.org>
+Date: Mon, 5 Apr 2021 11:46:53 +0100
+Subject: [PATCH] irqdomain: Cache irq_data instead of a virq number in the
+ revmap
+
+Caching a virq number in the revmap is pretty inefficient, as
+it means we will need to convert it back to either an irq_data
+or irq_desc to do anything with it.
+
+It is also a bit odd, as the radix tree does cache irq_data
+pointers.
+
+Change the revmap type to be an irq_data pointer instead of
+an unsigned int, and preserve the current API for now.
+
+Signed-off-by: Marc Zyngier <maz@kernel.org>
+---
+ include/linux/irqdomain.h |  4 ++--
+ kernel/irq/irqdomain.c    | 16 +++++++++++-----
+ 2 files changed, 13 insertions(+), 7 deletions(-)
+
+--- a/include/linux/irqdomain.h
++++ b/include/linux/irqdomain.h
+@@ -155,7 +155,7 @@ struct irq_domain_chip_generic;
+  * Revmap data, used internally by irq_domain
+  * @revmap_size: Size of the linear map table @revmap[]
+  * @revmap_tree: Radix map tree for hwirqs that don't fit in the linear map
+- * @revmap: Linear table of hwirq->virq reverse mappings
++ * @revmap: Linear table of irq_data pointers
+  */
+ struct irq_domain {
+ 	struct list_head link;
+@@ -181,7 +181,7 @@ struct irq_domain {
+ 	unsigned int revmap_size;
+ 	struct radix_tree_root revmap_tree;
+ 	struct mutex revmap_tree_mutex;
+-	unsigned int revmap[];
++	struct irq_data *revmap[];
+ };
+ 
+ /* Irq domain flags */
+--- a/kernel/irq/irqdomain.c
++++ b/kernel/irq/irqdomain.c
+@@ -483,7 +483,7 @@ static void irq_domain_clear_mapping(str
+ 		return;
+ 
+ 	if (hwirq < domain->revmap_size) {
+-		domain->revmap[hwirq] = 0;
++		domain->revmap[hwirq] = NULL;
+ 	} else {
+ 		mutex_lock(&domain->revmap_tree_mutex);
+ 		radix_tree_delete(&domain->revmap_tree, hwirq);
+@@ -499,7 +499,7 @@ static void irq_domain_set_mapping(struc
+ 		return;
+ 
+ 	if (hwirq < domain->revmap_size) {
+-		domain->revmap[hwirq] = irq_data->irq;
++		domain->revmap[hwirq] = irq_data;
+ 	} else {
+ 		mutex_lock(&domain->revmap_tree_mutex);
+ 		radix_tree_insert(&domain->revmap_tree, hwirq, irq_data);
+@@ -924,7 +924,7 @@ unsigned int irq_find_mapping(struct irq
+ 
+ 	/* Check if the hwirq is in the linear revmap. */
+ 	if (hwirq < domain->revmap_size)
+-		return domain->revmap[hwirq];
++		return domain->revmap[hwirq]->irq;
+ 
+ 	rcu_read_lock();
+ 	data = radix_tree_lookup(&domain->revmap_tree, hwirq);
+@@ -1507,8 +1507,14 @@ static void irq_domain_fix_revmap(struct
+ {
+ 	void __rcu **slot;
+ 
+-	if (irq_domain_is_nomap(d->domain) || d->hwirq < d->domain->revmap_size)
+-		return; /* Not using radix tree. */
++	if (irq_domain_is_nomap(d->domain))
++		return;
++
++	if (d->hwirq < d->domain->revmap_size) {
++		/* Not using radix tree */
++		d->domain->revmap[d->hwirq] = d;
++		return;
++	}
+ 
+ 	/* Fix up the revmap. */
+ 	mutex_lock(&d->domain->revmap_tree_mutex);

@@ -1,0 +1,98 @@
+From 51fe1b154e2fe798b280ca199cb3f26f340c5dfd Mon Sep 17 00:00:00 2001
+From: Cristian Marussi <cristian.marussi@arm.com>
+Date: Tue, 16 Mar 2021 12:48:57 +0000
+Subject: [PATCH] firmware: arm_scmi: Cleanup legacy protocol init code
+
+Now that all protocols and drivers have been ported to the new interface
+based on protocol handles and get/put operations, remove all the legacy
+transient initialization code.
+
+Link: https://lore.kernel.org/r/20210316124903.35011-33-cristian.marussi@arm.com
+Tested-by: Florian Fainelli <f.fainelli@gmail.com>
+Signed-off-by: Cristian Marussi <cristian.marussi@arm.com>
+Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+---
+ drivers/firmware/arm_scmi/bus.c    | 26 +-------------------------
+ drivers/firmware/arm_scmi/common.h |  5 +----
+ 2 files changed, 2 insertions(+), 29 deletions(-)
+
+--- a/drivers/firmware/arm_scmi/bus.c
++++ b/drivers/firmware/arm_scmi/bus.c
+@@ -66,27 +66,11 @@ const struct scmi_protocol *scmi_protoco
+ 	return proto;
+ }
+ 
+-static int scmi_protocol_init(int protocol_id, struct scmi_handle *handle)
+-{
+-	const struct scmi_protocol *proto;
+-
+-	proto = scmi_protocol_get(protocol_id);
+-	if (!proto)
+-		return -EINVAL;
+-	return proto->init(handle);
+-}
+-
+-static int scmi_protocol_dummy_init(struct scmi_handle *handle)
+-{
+-	return 0;
+-}
+-
+ static int scmi_dev_probe(struct device *dev)
+ {
+ 	struct scmi_driver *scmi_drv = to_scmi_driver(dev->driver);
+ 	struct scmi_device *scmi_dev = to_scmi_dev(dev);
+ 	const struct scmi_device_id *id;
+-	int ret;
+ 
+ 	id = scmi_dev_match_id(scmi_dev, scmi_drv);
+ 	if (!id)
+@@ -95,14 +79,6 @@ static int scmi_dev_probe(struct device
+ 	if (!scmi_dev->handle)
+ 		return -EPROBE_DEFER;
+ 
+-	ret = scmi_protocol_init(scmi_dev->protocol_id, scmi_dev->handle);
+-	if (ret)
+-		return ret;
+-
+-	/* Skip protocol initialisation for additional devices */
+-	idr_replace(&scmi_protocols, &scmi_protocol_dummy_init,
+-		    scmi_dev->protocol_id);
+-
+ 	return scmi_drv->probe(scmi_dev);
+ }
+ 
+@@ -222,7 +198,7 @@ int scmi_protocol_register(const struct
+ 		return -EINVAL;
+ 	}
+ 
+-	if (!proto->init && !proto->instance_init) {
++	if (!proto->instance_init) {
+ 		pr_err("missing init for protocol 0x%x\n", proto->id);
+ 		return -EINVAL;
+ 	}
+--- a/drivers/firmware/arm_scmi/common.h
++++ b/drivers/firmware/arm_scmi/common.h
+@@ -224,14 +224,12 @@ int scmi_version_get(const struct scmi_h
+ void scmi_setup_protocol_implemented(const struct scmi_protocol_handle *ph,
+ 				     u8 *prot_imp);
+ 
+-typedef int (*scmi_prot_init_fn_t)(struct scmi_handle *);
+ typedef int (*scmi_prot_init_ph_fn_t)(const struct scmi_protocol_handle *);
+ 
+ /**
+  * struct scmi_protocol  - Protocol descriptor
+  * @id: Protocol ID.
+- * @init: Mandatory protocol initialization function.
+- * @instance_init: Optional protocol instance initialization function.
++ * @instance_init: Mandatory protocol initialization function.
+  * @instance_deinit: Optional protocol de-initialization function.
+  * @ops: Optional reference to the operations provided by the protocol and
+  *	 exposed in scmi_protocol.h.
+@@ -239,7 +237,6 @@ typedef int (*scmi_prot_init_ph_fn_t)(co
+  */
+ struct scmi_protocol {
+ 	const u8				id;
+-	const scmi_prot_init_fn_t		init;
+ 	const scmi_prot_init_ph_fn_t		instance_init;
+ 	const scmi_prot_init_ph_fn_t		instance_deinit;
+ 	const void				*ops;

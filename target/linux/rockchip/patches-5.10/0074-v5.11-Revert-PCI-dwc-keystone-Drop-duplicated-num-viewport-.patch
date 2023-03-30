@@ -1,0 +1,76 @@
+From fcde397422ef621e52dac509e253d5e8a8f43b23 Mon Sep 17 00:00:00 2001
+From: Rob Herring <robh@kernel.org>
+Date: Thu, 5 Nov 2020 15:11:57 -0600
+Subject: [PATCH] Revert "PCI: dwc/keystone: Drop duplicated 'num-viewport'"
+
+This reverts commit 421063efaf1e8f2ac6248cca0064e5877e375f87.
+
+In preparation to detect the number of iATU regions instead of using DT
+properties, we need to keep reading 'num-viewport' for the Keystone
+driver which doesn't use the iATU in older versions of the IP.
+
+However, note that Keystone has been broken for some time with upstream
+dts files which don't set 'num-viewports'. The reverted commit did
+make the property optional, but now it's mandatory again.
+
+Link: https://lore.kernel.org/r/20201105211159.1814485-15-robh@kernel.org
+Tested-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Signed-off-by: Rob Herring <robh@kernel.org>
+Signed-off-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Cc: Murali Karicheri <m-karicheri2@ti.com>
+Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+---
+ drivers/pci/controller/dwc/pci-keystone.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+--- a/drivers/pci/controller/dwc/pci-keystone.c
++++ b/drivers/pci/controller/dwc/pci-keystone.c
+@@ -121,6 +121,7 @@ struct keystone_pcie {
+ 
+ 	int			msi_host_irq;
+ 	int			num_lanes;
++	u32			num_viewport;
+ 	struct phy		**phy;
+ 	struct device_link	**link;
+ 	struct			device_node *msi_intc_np;
+@@ -386,9 +387,9 @@ static void ks_pcie_clear_dbi_mode(struc
+ static void ks_pcie_setup_rc_app_regs(struct keystone_pcie *ks_pcie)
+ {
+ 	u32 val;
++	u32 num_viewport = ks_pcie->num_viewport;
+ 	struct dw_pcie *pci = ks_pcie->pci;
+ 	struct pcie_port *pp = &pci->pp;
+-	u32 num_viewport = pci->num_viewport;
+ 	u64 start, end;
+ 	struct resource *mem;
+ 	int i;
+@@ -1094,6 +1095,7 @@ static int __init ks_pcie_probe(struct p
+ 	struct resource *res;
+ 	unsigned int version;
+ 	void __iomem *base;
++	u32 num_viewport;
+ 	struct phy **phy;
+ 	u32 num_lanes;
+ 	char name[10];
+@@ -1225,6 +1227,12 @@ static int __init ks_pcie_probe(struct p
+ 			goto err_get_sync;
+ 		}
+ 
++		ret = of_property_read_u32(np, "num-viewport", &num_viewport);
++		if (ret < 0) {
++			dev_err(dev, "unable to read *num-viewport* property\n");
++			goto err_get_sync;
++		}
++
+ 		/*
+ 		 * "Power Sequencing and Reset Signal Timings" table in
+ 		 * PCI EXPRESS CARD ELECTROMECHANICAL SPECIFICATION, REV. 2.0
+@@ -1238,6 +1246,7 @@ static int __init ks_pcie_probe(struct p
+ 			gpiod_set_value_cansleep(gpiod, 1);
+ 		}
+ 
++		ks_pcie->num_viewport = num_viewport;
+ 		pci->pp.ops = host_ops;
+ 		ret = dw_pcie_host_init(&pci->pp);
+ 		if (ret < 0)

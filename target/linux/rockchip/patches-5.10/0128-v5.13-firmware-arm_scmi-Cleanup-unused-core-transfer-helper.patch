@@ -1,0 +1,198 @@
+From 9162afa2ae990603f2ae91fae64b9cb55435972b Mon Sep 17 00:00:00 2001
+From: Cristian Marussi <cristian.marussi@arm.com>
+Date: Tue, 16 Mar 2021 12:48:58 +0000
+Subject: [PATCH] firmware: arm_scmi: Cleanup unused core transfer helper
+ wrappers
+
+Remove unused core scmi_xfer wrappers now that we have migrated all
+protocols to the new interface based on protocol handles.
+
+Link: https://lore.kernel.org/r/20210316124903.35011-34-cristian.marussi@arm.com
+Tested-by: Florian Fainelli <f.fainelli@gmail.com>
+Signed-off-by: Cristian Marussi <cristian.marussi@arm.com>
+Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+---
+ drivers/firmware/arm_scmi/common.h | 15 -----
+ drivers/firmware/arm_scmi/driver.c | 91 ------------------------------
+ 2 files changed, 106 deletions(-)
+
+--- a/drivers/firmware/arm_scmi/common.h
++++ b/drivers/firmware/arm_scmi/common.h
+@@ -143,15 +143,6 @@ struct scmi_xfer {
+ 	struct completion *async_done;
+ };
+ 
+-void scmi_xfer_put(const struct scmi_handle *h, struct scmi_xfer *xfer);
+-int scmi_do_xfer(const struct scmi_handle *h, struct scmi_xfer *xfer);
+-int scmi_do_xfer_with_response(const struct scmi_handle *h,
+-			       struct scmi_xfer *xfer);
+-int scmi_xfer_get_init(const struct scmi_handle *h, u8 msg_id, u8 prot_id,
+-		       size_t tx_size, size_t rx_size, struct scmi_xfer **p);
+-void scmi_reset_rx_to_maxsz(const struct scmi_handle *handle,
+-			    struct scmi_xfer *xfer);
+-
+ struct scmi_xfer_ops;
+ 
+ /**
+@@ -181,11 +172,6 @@ struct scmi_protocol_handle {
+ 	void *(*get_priv)(const struct scmi_protocol_handle *ph);
+ };
+ 
+-const struct scmi_protocol_handle *
+-scmi_map_protocol_handle(const struct scmi_handle *handle, u8 prot_id);
+-
+-struct scmi_handle *scmi_map_scmi_handle(const struct scmi_protocol_handle *ph);
+-
+ /**
+  * struct scmi_xfer_ops  - References to the core SCMI xfer operations.
+  * @version_get: Get this version protocol.
+@@ -220,7 +206,6 @@ scmi_revision_area_get(const struct scmi
+ int scmi_handle_put(const struct scmi_handle *handle);
+ struct scmi_handle *scmi_handle_get(struct device *dev);
+ void scmi_set_handle(struct scmi_device *scmi_dev);
+-int scmi_version_get(const struct scmi_handle *h, u8 protocol, u32 *version);
+ void scmi_setup_protocol_implemented(const struct scmi_protocol_handle *ph,
+ 				     u8 *prot_imp);
+ 
+--- a/drivers/firmware/arm_scmi/driver.c
++++ b/drivers/firmware/arm_scmi/driver.c
+@@ -354,28 +354,6 @@ void scmi_rx_callback(struct scmi_chan_i
+ 	}
+ }
+ 
+-/* Transient code wrapper to ease API migration */
+-const struct scmi_protocol_handle *
+-scmi_map_protocol_handle(const struct scmi_handle *handle, u8 prot_id)
+-{
+-	struct scmi_info *info = handle_to_scmi_info(handle);
+-	const struct scmi_protocol_instance *pi;
+-
+-	mutex_lock(&info->protocols_mtx);
+-	pi = idr_find(&info->protocols, prot_id);
+-	mutex_unlock(&info->protocols_mtx);
+-
+-	return pi ? &pi->ph : NULL;
+-}
+-
+-/* Transient code wrapper to ease API migration */
+-struct scmi_handle *scmi_map_scmi_handle(const struct scmi_protocol_handle *ph)
+-{
+-	const struct scmi_protocol_instance *pi = ph_to_pi(ph);
+-
+-	return (struct scmi_handle *)pi->handle;
+-}
+-
+ /**
+  * xfer_put() - Release a transmit message
+  *
+@@ -391,17 +369,6 @@ static void xfer_put(const struct scmi_p
+ 	__scmi_xfer_put(&info->tx_minfo, xfer);
+ }
+ 
+-void scmi_xfer_put(const struct scmi_handle *h, struct scmi_xfer *xfer)
+-{
+-	const struct scmi_protocol_handle *ph;
+-
+-	ph = scmi_map_protocol_handle(h, xfer->hdr.protocol_id);
+-	if (!ph)
+-		return;
+-
+-	return xfer_put(ph, xfer);
+-}
+-
+ #define SCMI_MAX_POLL_TO_NS	(100 * NSEC_PER_USEC)
+ 
+ static bool scmi_xfer_done_no_timeout(struct scmi_chan_info *cinfo,
+@@ -485,17 +452,6 @@ static int do_xfer(const struct scmi_pro
+ 	return ret;
+ }
+ 
+-int scmi_do_xfer(const struct scmi_handle *h, struct scmi_xfer *xfer)
+-{
+-	const struct scmi_protocol_handle *ph;
+-
+-	ph = scmi_map_protocol_handle(h, xfer->hdr.protocol_id);
+-	if (!ph)
+-		return -EINVAL;
+-
+-	return do_xfer(ph, xfer);
+-}
+-
+ static void reset_rx_to_maxsz(const struct scmi_protocol_handle *ph,
+ 			      struct scmi_xfer *xfer)
+ {
+@@ -505,18 +461,6 @@ static void reset_rx_to_maxsz(const stru
+ 	xfer->rx.len = info->desc->max_msg_size;
+ }
+ 
+-void scmi_reset_rx_to_maxsz(const struct scmi_handle *handle,
+-			    struct scmi_xfer *xfer)
+-{
+-	const struct scmi_protocol_handle *ph;
+-
+-	ph = scmi_map_protocol_handle(handle, xfer->hdr.protocol_id);
+-	if (!ph)
+-		return;
+-
+-	return reset_rx_to_maxsz(ph, xfer);
+-}
+-
+ #define SCMI_MAX_RESPONSE_TIMEOUT	(2 * MSEC_PER_SEC)
+ 
+ /**
+@@ -552,18 +496,6 @@ static int do_xfer_with_response(const s
+ 	return ret;
+ }
+ 
+-int scmi_do_xfer_with_response(const struct scmi_handle *h,
+-			       struct scmi_xfer *xfer)
+-{
+-	const struct scmi_protocol_handle *ph;
+-
+-	ph = scmi_map_protocol_handle(h, xfer->hdr.protocol_id);
+-	if (!ph)
+-		return -EINVAL;
+-
+-	return do_xfer_with_response(ph, xfer);
+-}
+-
+ /**
+  * xfer_get_init() - Allocate and initialise one message for transmit
+  *
+@@ -613,18 +545,6 @@ static int xfer_get_init(const struct sc
+ 	return 0;
+ }
+ 
+-int scmi_xfer_get_init(const struct scmi_handle *h, u8 msg_id, u8 prot_id,
+-		       size_t tx_size, size_t rx_size, struct scmi_xfer **p)
+-{
+-	const struct scmi_protocol_handle *ph;
+-
+-	ph = scmi_map_protocol_handle(h, prot_id);
+-	if (!ph)
+-		return -EINVAL;
+-
+-	return xfer_get_init(ph, msg_id, tx_size, rx_size, p);
+-}
+-
+ /**
+  * version_get() - command to get the revision of the SCMI entity
+  *
+@@ -655,17 +575,6 @@ static int version_get(const struct scmi
+ 	return ret;
+ }
+ 
+-int scmi_version_get(const struct scmi_handle *h, u8 protocol, u32 *version)
+-{
+-	const struct scmi_protocol_handle *ph;
+-
+-	ph = scmi_map_protocol_handle(h, protocol);
+-	if (!ph)
+-		return -EINVAL;
+-
+-	return version_get(ph, version);
+-}
+-
+ /**
+  * scmi_set_protocol_priv  - Set protocol specific data at init time
+  *

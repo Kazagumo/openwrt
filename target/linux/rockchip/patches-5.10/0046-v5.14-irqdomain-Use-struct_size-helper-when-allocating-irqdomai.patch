@@ -1,0 +1,27 @@
+From 426fa316148bccabf48f9c91a13c387ee911eadc Mon Sep 17 00:00:00 2001
+From: Marc Zyngier <maz@kernel.org>
+Date: Mon, 5 Apr 2021 11:30:51 +0100
+Subject: [PATCH] irqdomain: Use struct_size() helper when allocating irqdomain
+
+Instead of open-coding the size computation of struct irqdomain,
+use the struct_size() helper instead.
+
+This is going to be handy as we change the type of the revmap
+array.
+
+Signed-off-by: Marc Zyngier <maz@kernel.org>
+---
+ kernel/irq/irqdomain.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/kernel/irq/irqdomain.c
++++ b/kernel/irq/irqdomain.c
+@@ -141,7 +141,7 @@ struct irq_domain *__irq_domain_add(stru
+ 		    (!IS_ENABLED(CONFIG_IRQ_DOMAIN_NOMAP) && direct_max)))
+ 		return NULL;
+ 
+-	domain = kzalloc_node(sizeof(*domain) + (sizeof(unsigned int) * size),
++	domain = kzalloc_node(struct_size(domain, revmap, size),
+ 			      GFP_KERNEL, of_node_to_nid(to_of_node(fwnode)));
+ 	if (!domain)
+ 		return NULL;

@@ -1,0 +1,49 @@
+From 507cd4d2c5eb2d647d27b1047e1a8c73c4890cf3 Mon Sep 17 00:00:00 2001
+From: Sudeep Holla <sudeep.holla@arm.com>
+Date: Wed, 2 Jun 2021 08:38:51 +0100
+Subject: [PATCH] firmware: arm_scmi: Add compatibility checks for shmem node
+
+The shared memory node used for communication between the firmware and
+the OS should be compatible with "arm,scmi-shmem". Add the check for the
+same while parsing the node before fetching the memory regions.
+
+Link: https://lore.kernel.org/r/20210602073851.1005607-2-sudeep.holla@arm.com
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Cristian Marussi <cristian.marussi@arm.com>
+Cc: Florian Fainelli <f.fainelli@gmail.com>
+Cc: Jim Quinlan <jim2101024@gmail.com>
+Cc: Etienne Carriere <etienne.carriere@linaro.org>
+Reviewed-by: Florian Fainelli <f.fainelli@gmail.com>
+Tested-by: Florian Fainelli <f.fainelli@gmail.com>
+Reviewed-by: Cristian Marussi <cristian.marussi@arm.com>
+Tested-by: Cristian Marussi <cristian.marussi@arm.com>
+Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+---
+ drivers/firmware/arm_scmi/mailbox.c | 3 +++
+ drivers/firmware/arm_scmi/smc.c     | 3 +++
+ 2 files changed, 6 insertions(+)
+
+--- a/drivers/firmware/arm_scmi/mailbox.c
++++ b/drivers/firmware/arm_scmi/mailbox.c
+@@ -69,6 +69,9 @@ static int mailbox_chan_setup(struct scm
+ 		return -ENOMEM;
+ 
+ 	shmem = of_parse_phandle(cdev->of_node, "shmem", idx);
++	if (!of_device_is_compatible(shmem, "arm,scmi-shmem"))
++		return -ENXIO;
++
+ 	ret = of_address_to_resource(shmem, 0, &res);
+ 	of_node_put(shmem);
+ 	if (ret) {
+--- a/drivers/firmware/arm_scmi/smc.c
++++ b/drivers/firmware/arm_scmi/smc.c
+@@ -61,6 +61,9 @@ static int smc_chan_setup(struct scmi_ch
+ 		return -ENOMEM;
+ 
+ 	np = of_parse_phandle(cdev->of_node, "shmem", 0);
++	if (!of_device_is_compatible(np, "arm,scmi-shmem"))
++		return -ENXIO;
++
+ 	ret = of_address_to_resource(np, 0, &res);
+ 	of_node_put(np);
+ 	if (ret) {

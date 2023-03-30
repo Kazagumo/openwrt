@@ -1,0 +1,26 @@
+From ec88381936954a146f260a21bf8466ca07e5c71e Mon Sep 17 00:00:00 2001
+From: Cristian Marussi <cristian.marussi@arm.com>
+Date: Thu, 19 Nov 2020 19:10:48 +0000
+Subject: [PATCH] firmware: arm_scmi: Add support to enumerated SCMI voltage
+ domain device
+
+Add SCMI voltage domain device name to the core list of supported protocol
+devices so that it can be enumerated if the firmware supports it.
+
+Link: https://lore.kernel.org/r/20201119191051.46363-3-cristian.marussi@arm.com
+Signed-off-by: Cristian Marussi <cristian.marussi@arm.com>
+Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+---
+ drivers/firmware/arm_scmi/driver.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/drivers/firmware/arm_scmi/driver.c
++++ b/drivers/firmware/arm_scmi/driver.c
+@@ -757,6 +757,7 @@ static struct scmi_prot_devnames devname
+ 	{ SCMI_PROTOCOL_CLOCK,  { "clocks" },},
+ 	{ SCMI_PROTOCOL_SENSOR, { "hwmon" },},
+ 	{ SCMI_PROTOCOL_RESET,  { "reset" },},
++	{ SCMI_PROTOCOL_VOLTAGE,  { "regulator" },},
+ };
+ 
+ static inline void

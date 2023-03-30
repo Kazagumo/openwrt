@@ -1,0 +1,122 @@
+From aa1fd3e4cb976248651c319bb0ef929345958cf4 Mon Sep 17 00:00:00 2001
+From: Cristian Marussi <cristian.marussi@arm.com>
+Date: Tue, 16 Mar 2021 12:49:01 +0000
+Subject: [PATCH] firmware: arm_scmi: Rename non devres notify_ops
+
+Rename non devres managed notify_ops to use a naming pattern which exposes
+the performed action verb as last token.
+
+No functional change.
+
+Link: https://lore.kernel.org/r/20210316124903.35011-37-cristian.marussi@arm.com
+Tested-by: Florian Fainelli <f.fainelli@gmail.com>
+Signed-off-by: Cristian Marussi <cristian.marussi@arm.com>
+Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+---
+ drivers/firmware/arm_scmi/notify.c | 18 +++++++++---------
+ include/linux/scmi_protocol.h      |  8 ++++----
+ 2 files changed, 13 insertions(+), 13 deletions(-)
+
+--- a/drivers/firmware/arm_scmi/notify.c
++++ b/drivers/firmware/arm_scmi/notify.c
+@@ -1307,7 +1307,7 @@ static int scmi_event_handler_enable_eve
+ }
+ 
+ /**
+- * scmi_register_notifier()  - Register a notifier_block for an event
++ * scmi_notifier_register()  - Register a notifier_block for an event
+  * @handle: The handle identifying the platform instance against which the
+  *	    callback is registered
+  * @proto_id: Protocol ID
+@@ -1339,7 +1339,7 @@ static int scmi_event_handler_enable_eve
+  *
+  * Return: 0 on Success
+  */
+-static int scmi_register_notifier(const struct scmi_handle *handle,
++static int scmi_notifier_register(const struct scmi_handle *handle,
+ 				  u8 proto_id, u8 evt_id, const u32 *src_id,
+ 				  struct notifier_block *nb)
+ {
+@@ -1371,7 +1371,7 @@ static int scmi_register_notifier(const
+ }
+ 
+ /**
+- * scmi_unregister_notifier()  - Unregister a notifier_block for an event
++ * scmi_notifier_unregister()  - Unregister a notifier_block for an event
+  * @handle: The handle identifying the platform instance against which the
+  *	    callback is unregistered
+  * @proto_id: Protocol ID
+@@ -1386,7 +1386,7 @@ static int scmi_register_notifier(const
+  *
+  * Return: 0 on Success
+  */
+-static int scmi_unregister_notifier(const struct scmi_handle *handle,
++static int scmi_notifier_unregister(const struct scmi_handle *handle,
+ 				    u8 proto_id, u8 evt_id, const u32 *src_id,
+ 				    struct notifier_block *nb)
+ {
+@@ -1412,7 +1412,7 @@ static int scmi_unregister_notifier(cons
+ 	scmi_put_handler(ni, hndl);
+ 
+ 	/*
+-	 * This balances the initial get issued in @scmi_register_notifier.
++	 * This balances the initial get issued in @scmi_notifier_register.
+ 	 * If this notifier_block happened to be the last known user callback
+ 	 * for this event, the handler is here freed and the event's generation
+ 	 * stopped.
+@@ -1440,7 +1440,7 @@ static void scmi_devm_release_notifier(s
+ {
+ 	struct scmi_notifier_devres *dres = res;
+ 
+-	scmi_unregister_notifier(dres->handle, dres->proto_id, dres->evt_id,
++	scmi_notifier_unregister(dres->handle, dres->proto_id, dres->evt_id,
+ 				 dres->src_id, dres->nb);
+ }
+ 
+@@ -1471,7 +1471,7 @@ static int scmi_devm_notifier_register(s
+ 	if (!dres)
+ 		return -ENOMEM;
+ 
+-	ret = scmi_register_notifier(sdev->handle, proto_id,
++	ret = scmi_notifier_register(sdev->handle, proto_id,
+ 				     evt_id, src_id, nb);
+ 	if (ret) {
+ 		devres_free(dres);
+@@ -1609,8 +1609,8 @@ static void scmi_protocols_late_init(str
+ static const struct scmi_notify_ops notify_ops = {
+ 	.devm_event_notifier_register = scmi_devm_notifier_register,
+ 	.devm_event_notifier_unregister = scmi_devm_notifier_unregister,
+-	.register_event_notifier = scmi_register_notifier,
+-	.unregister_event_notifier = scmi_unregister_notifier,
++	.event_notifier_register = scmi_notifier_register,
++	.event_notifier_unregister = scmi_notifier_unregister,
+ };
+ 
+ /**
+--- a/include/linux/scmi_protocol.h
++++ b/include/linux/scmi_protocol.h
+@@ -548,8 +548,8 @@ struct scmi_voltage_proto_ops {
+  *				  the requested event
+  * @devm_event_notifier_unregister: Managed unregistration of a notifier_block
+  *				    for the requested event
+- * @register_event_notifier: Register a notifier_block for the requested event
+- * @unregister_event_notifier: Unregister a notifier_block for the requested
++ * @event_notifier_register: Register a notifier_block for the requested event
++ * @event_notifier_unregister: Unregister a notifier_block for the requested
+  *			       event
+  *
+  * A user can register/unregister its own notifier_block against the wanted
+@@ -590,11 +590,11 @@ struct scmi_notify_ops {
+ 					      u8 proto_id, u8 evt_id,
+ 					      const u32 *src_id,
+ 					      struct notifier_block *nb);
+-	int (*register_event_notifier)(const struct scmi_handle *handle,
++	int (*event_notifier_register)(const struct scmi_handle *handle,
+ 				       u8 proto_id, u8 evt_id,
+ 				       const u32 *src_id,
+ 				       struct notifier_block *nb);
+-	int (*unregister_event_notifier)(const struct scmi_handle *handle,
++	int (*event_notifier_unregister)(const struct scmi_handle *handle,
+ 					 u8 proto_id, u8 evt_id,
+ 					 const u32 *src_id,
+ 					 struct notifier_block *nb);

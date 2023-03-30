@@ -1,0 +1,54 @@
+From 0e898eb8df4e34c7b129452444eb7cef68a11f43 Mon Sep 17 00:00:00 2001
+From: Simon Xue <xxm@rock-chips.com>
+Date: Fri, 25 Jun 2021 14:55:11 +0800
+Subject: [PATCH] PCI: rockchip-dwc: Add Rockchip RK356X host controller driver
+
+Add a driver for the DesignWare-based PCIe controller found on
+RK356X. The existing pcie-rockchip-host driver is only used for
+the Rockchip-designed IP found on RK3399.
+
+Link: https://lore.kernel.org/r/20210625065511.1096935-1-xxm@rock-chips.com
+Tested-by: Peter Geis <pgwipeout@gmail.com>
+Signed-off-by: Simon Xue <xxm@rock-chips.com>
+Signed-off-by: Shawn Lin <shawn.lin@rock-chips.com>
+Signed-off-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Reviewed-by: Kever Yang <kever.yang@rock-chips.com>
+Reviewed-by: Rob Herring <robh@kernel.org>
+---
+ drivers/pci/controller/dwc/Kconfig            |  11 +
+ drivers/pci/controller/dwc/Makefile           |   1 +
+ drivers/pci/controller/dwc/pcie-dw-rockchip.c | 279 ++++++++++++++++++
+ 3 files changed, 291 insertions(+)
+ create mode 100644 drivers/pci/controller/dwc/pcie-dw-rockchip.c
+
+--- a/drivers/pci/controller/dwc/Kconfig
++++ b/drivers/pci/controller/dwc/Kconfig
+@@ -208,6 +208,17 @@ config PCIE_ARTPEC6_EP
+ 	  Enables support for the PCIe controller in the ARTPEC-6 SoC to work in
+ 	  endpoint mode. This uses the DesignWare core.
+ 
++config PCIE_ROCKCHIP_DW_HOST
++	bool "Rockchip DesignWare PCIe controller"
++	select PCIE_DW
++	select PCIE_DW_HOST
++	depends on PCI_MSI_IRQ_DOMAIN
++	depends on ARCH_ROCKCHIP || COMPILE_TEST
++	depends on OF
++	help
++	  Enables support for the DesignWare PCIe controller in the
++	  Rockchip SoC except RK3399.
++
+ config PCIE_INTEL_GW
+ 	bool "Intel Gateway PCIe host controller support"
+ 	depends on OF && (X86 || COMPILE_TEST)
+--- a/drivers/pci/controller/dwc/Makefile
++++ b/drivers/pci/controller/dwc/Makefile
+@@ -13,6 +13,7 @@ obj-$(CONFIG_PCI_LAYERSCAPE_EP) += pci-l
+ obj-$(CONFIG_PCIE_QCOM) += pcie-qcom.o
+ obj-$(CONFIG_PCIE_ARMADA_8K) += pcie-armada8k.o
+ obj-$(CONFIG_PCIE_ARTPEC6) += pcie-artpec6.o
++obj-$(CONFIG_PCIE_ROCKCHIP_DW_HOST) += pcie-dw-rockchip.o
+ obj-$(CONFIG_PCIE_INTEL_GW) += pcie-intel-gw.o
+ obj-$(CONFIG_PCIE_KIRIN) += pcie-kirin.o
+ obj-$(CONFIG_PCIE_HISI_STB) += pcie-histb.o

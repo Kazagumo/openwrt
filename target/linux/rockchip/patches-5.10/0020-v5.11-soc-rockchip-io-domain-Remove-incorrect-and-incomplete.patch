@@ -1,0 +1,35 @@
+From a6a3a24c129d229a0eb26b329ab617e2a04245dd Mon Sep 17 00:00:00 2001
+From: Lee Jones <lee.jones@linaro.org>
+Date: Tue, 3 Nov 2020 15:28:18 +0000
+Subject: [PATCH] soc: rockchip: io-domain: Remove incorrect and incomplete
+ comment header
+
+Fixes the following W=1 kernel build warning(s):
+
+ drivers/soc/rockchip/io-domain.c:57: warning: Cannot understand  * @supplies: voltage settings matching the register bits.
+
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Cc: Heiko Stuebner <heiko@sntech.de>
+Cc: Liam Girdwood <lgirdwood@gmail.com>
+Cc: Mark Brown <broonie@kernel.org>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Cc: Doug Anderson <dianders@chromium.org>
+Cc: linux-rockchip@lists.infradead.org
+Link: https://lore.kernel.org/r/20201103152838.1290217-6-lee.jones@linaro.org
+Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+---
+ drivers/soc/rockchip/io-domain.c | 3 ---
+ 1 file changed, 3 deletions(-)
+
+--- a/drivers/soc/rockchip/io-domain.c
++++ b/drivers/soc/rockchip/io-domain.c
+@@ -53,9 +53,6 @@
+ 
+ struct rockchip_iodomain;
+ 
+-/**
+- * @supplies: voltage settings matching the register bits.
+- */
+ struct rockchip_iodomain_soc_data {
+ 	int grf_offset;
+ 	const char *supply_names[MAX_SUPPLIES];

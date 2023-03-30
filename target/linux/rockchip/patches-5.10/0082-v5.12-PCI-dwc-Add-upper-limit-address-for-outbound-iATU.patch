@@ -1,0 +1,50 @@
+From 5b4cf0f6532434537818e4a3c656b9f11c81729b Mon Sep 17 00:00:00 2001
+From: Shradha Todi <shradha.t@samsung.com>
+Date: Tue, 2 Feb 2021 12:58:38 +0530
+Subject: [PATCH] PCI: dwc: Add upper limit address for outbound iATU
+
+The size parameter is unsigned long type which can accept size > 4GB. In
+that case, the upper limit address must be programmed. Add support to
+program the upper limit address and set INCREASE_REGION_SIZE in case size >
+4GB.
+
+Link: https://lore.kernel.org/r/1612250918-19610-1-git-send-email-shradha.t@samsung.com
+Signed-off-by: Shradha Todi <shradha.t@samsung.com>
+Signed-off-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Reviewed-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+Reviewed-by: Rob Herring <robh@kernel.org>
+---
+ drivers/pci/controller/dwc/pcie-designware.c | 5 +++++
+ drivers/pci/controller/dwc/pcie-designware.h | 1 +
+ 2 files changed, 6 insertions(+)
+
+--- a/drivers/pci/controller/dwc/pcie-designware.c
++++ b/drivers/pci/controller/dwc/pcie-designware.c
+@@ -333,11 +333,16 @@ static void __dw_pcie_prog_outbound_atu(
+ 			   upper_32_bits(cpu_addr));
+ 	dw_pcie_writel_dbi(pci, PCIE_ATU_LIMIT,
+ 			   lower_32_bits(cpu_addr + size - 1));
++	if (pci->version >= 0x460A)
++		dw_pcie_writel_dbi(pci, PCIE_ATU_UPPER_LIMIT,
++				   upper_32_bits(cpu_addr + size - 1));
+ 	dw_pcie_writel_dbi(pci, PCIE_ATU_LOWER_TARGET,
+ 			   lower_32_bits(pci_addr));
+ 	dw_pcie_writel_dbi(pci, PCIE_ATU_UPPER_TARGET,
+ 			   upper_32_bits(pci_addr));
+ 	val = type | PCIE_ATU_FUNC_NUM(func_no);
++	val = ((upper_32_bits(size - 1)) && (pci->version >= 0x460A)) ?
++		val | PCIE_ATU_INCREASE_REGION_SIZE : val;
+ 	if (pci->version == 0x490A)
+ 		val = dw_pcie_enable_ecrc(val);
+ 	dw_pcie_writel_dbi(pci, PCIE_ATU_CR1, val);
+--- a/drivers/pci/controller/dwc/pcie-designware.h
++++ b/drivers/pci/controller/dwc/pcie-designware.h
+@@ -100,6 +100,7 @@
+ #define PCIE_ATU_DEV(x)			FIELD_PREP(GENMASK(23, 19), x)
+ #define PCIE_ATU_FUNC(x)		FIELD_PREP(GENMASK(18, 16), x)
+ #define PCIE_ATU_UPPER_TARGET		0x91C
++#define PCIE_ATU_UPPER_LIMIT		0x924
+ 
+ #define PCIE_MISC_CONTROL_1_OFF		0x8BC
+ #define PCIE_DBI_RO_WR_EN		BIT(0)

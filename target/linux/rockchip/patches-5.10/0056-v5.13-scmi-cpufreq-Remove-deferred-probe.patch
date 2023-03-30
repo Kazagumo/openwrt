@@ -1,0 +1,33 @@
+From 71a37cd6a59dc58df3f4e58db3f4f04c9e69da43 Mon Sep 17 00:00:00 2001
+From: Nicola Mazzucato <nicola.mazzucato@arm.com>
+Date: Thu, 18 Feb 2021 22:23:24 +0000
+Subject: [PATCH] scmi-cpufreq: Remove deferred probe
+
+The current implementation of the scmi_cpufreq_init() function returns
+-EPROBE_DEFER when the OPP table is not populated. In practice the
+cpufreq core cannot handle this error code.
+Therefore, fix the return value and clarify the error message.
+
+Link: https://lore.kernel.org/r/20210218222326.15788-2-nicola.mazzucato@arm.com
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Nicola Mazzucato <nicola.mazzucato@arm.com>
+Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+---
+ drivers/cpufreq/scmi-cpufreq.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+--- a/drivers/cpufreq/scmi-cpufreq.c
++++ b/drivers/cpufreq/scmi-cpufreq.c
+@@ -155,8 +155,10 @@ static int scmi_cpufreq_init(struct cpuf
+ 
+ 	nr_opp = dev_pm_opp_get_opp_count(cpu_dev);
+ 	if (nr_opp <= 0) {
+-		dev_dbg(cpu_dev, "OPP table is not ready, deferring probe\n");
+-		ret = -EPROBE_DEFER;
++		dev_err(cpu_dev, "%s: No OPPs for this device: %d\n",
++			__func__, ret);
++
++		ret = -ENODEV;
+ 		goto out_free_opp;
+ 	}
+ 

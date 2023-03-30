@@ -1,0 +1,41 @@
+From 3856e1c5b88e5d363c251a2bc0d9fd0efdc6184a Mon Sep 17 00:00:00 2001
+From: Shradha Todi <shradha.t@samsung.com>
+Date: Wed, 6 Jan 2021 16:15:00 +0530
+Subject: [PATCH] PCI: dwc: Change size to u64 for EP outbound iATU
+
+Since outbound iATU permits size to be greater than 4GB for which the
+support is also available, allow EP function to send u64 size instead of
+truncating to u32.
+
+Link: https://lore.kernel.org/r/1609929900-19082-1-git-send-email-shradha.t@samsung.com
+Signed-off-by: Shradha Todi <shradha.t@samsung.com>
+Signed-off-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Reviewed-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+---
+ drivers/pci/controller/dwc/pcie-designware.c | 2 +-
+ drivers/pci/controller/dwc/pcie-designware.h | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+--- a/drivers/pci/controller/dwc/pcie-designware.c
++++ b/drivers/pci/controller/dwc/pcie-designware.c
+@@ -366,7 +366,7 @@ void dw_pcie_prog_outbound_atu(struct dw
+ 
+ void dw_pcie_prog_ep_outbound_atu(struct dw_pcie *pci, u8 func_no, int index,
+ 				  int type, u64 cpu_addr, u64 pci_addr,
+-				  u32 size)
++				  u64 size)
+ {
+ 	__dw_pcie_prog_outbound_atu(pci, func_no, index, type,
+ 				    cpu_addr, pci_addr, size);
+--- a/drivers/pci/controller/dwc/pcie-designware.h
++++ b/drivers/pci/controller/dwc/pcie-designware.h
+@@ -298,7 +298,7 @@ void dw_pcie_prog_outbound_atu(struct dw
+ 			       u64 size);
+ void dw_pcie_prog_ep_outbound_atu(struct dw_pcie *pci, u8 func_no, int index,
+ 				  int type, u64 cpu_addr, u64 pci_addr,
+-				  u32 size);
++				  u64 size);
+ int dw_pcie_prog_inbound_atu(struct dw_pcie *pci, u8 func_no, int index,
+ 			     int bar, u64 cpu_addr,
+ 			     enum dw_pcie_as_type as_type);

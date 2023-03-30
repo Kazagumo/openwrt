@@ -1,0 +1,53 @@
+From 8240ef50d4864325b346e40bb9d30cda9f22102d Mon Sep 17 00:00:00 2001
+From: Marc Zyngier <maz@kernel.org>
+Date: Wed, 12 May 2021 13:45:52 +0100
+Subject: [PATCH] genirq: Add generic_handle_domain_irq() helper
+
+Provide generic_handle_domain_irq() as a pendent to handle_domain_irq()
+for non-root interrupt controllers
+
+Signed-off-by: Marc Zyngier <maz@kernel.org>
+---
+ include/linux/irqdesc.h |  2 ++
+ kernel/irq/irqdesc.c    | 19 ++++++++++++++++++-
+ 2 files changed, 20 insertions(+), 1 deletion(-)
+
+--- a/include/linux/irqdesc.h
++++ b/include/linux/irqdesc.h
+@@ -165,6 +165,8 @@ int generic_handle_irq(unsigned int irq)
+ int __handle_domain_irq(struct irq_domain *domain, unsigned int hwirq,
+ 			bool lookup, struct pt_regs *regs);
+ 
++int generic_handle_domain_irq(struct irq_domain *domain, unsigned int hwirq);
++
+ static inline int handle_domain_irq(struct irq_domain *domain,
+ 				    unsigned int hwirq, struct pt_regs *regs)
+ {
+--- a/kernel/irq/irqdesc.c
++++ b/kernel/irq/irqdesc.c
+@@ -661,7 +661,24 @@ EXPORT_SYMBOL_GPL(generic_handle_irq);
+ 
+ #ifdef CONFIG_HANDLE_DOMAIN_IRQ
+ /**
+- * __handle_domain_irq - Invoke the handler for a HW irq belonging to a domain
++ * generic_handle_domain_irq - Invoke the handler for a HW irq belonging
++ *                             to a domain, usually for a non-root interrupt
++ *                             controller
++ * @domain:	The domain where to perform the lookup
++ * @hwirq:	The HW irq number to convert to a logical one
++ *
++ * Returns:	0 on success, or -EINVAL if conversion has failed
++ *
++ */
++int generic_handle_domain_irq(struct irq_domain *domain, unsigned int hwirq)
++{
++	return handle_irq_desc(irq_resolve_mapping(domain, hwirq));
++}
++EXPORT_SYMBOL_GPL(generic_handle_domain_irq);
++
++/**
++ * __handle_domain_irq - Invoke the handler for a HW irq belonging to a domain,
++ *                       usually for a root interrupt controller
+  * @domain:	The domain where to perform the lookup
+  * @hwirq:	The HW irq number to convert to a logical one
+  * @lookup:	Whether to perform the domain lookup or not

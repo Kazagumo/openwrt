@@ -1,0 +1,60 @@
+From 7786da3b5ae167c17f35e22ba35e06006338c2f6 Mon Sep 17 00:00:00 2001
+From: Simon Xue <xxm@rock-chips.com>
+Date: Mon, 12 Jul 2021 09:45:07 +0800
+Subject: [PATCH] iio: adc: rockchip_saradc: add support for rk3568 saradc
+
+It is similar to other devices, but with 8 channels.
+
+Signed-off-by: Simon Xue <xxm@rock-chips.com>
+Reviewed-by: Heiko Stuebner <heiko@sntech.de>
+Link: https://lore.kernel.org/r/20210712014507.97477-1-xxm@rock-chips.com
+Signed-off-by: Jonathan Cameron <Jonathan.Cameron@huawei.com>
+---
+ drivers/iio/adc/rockchip_saradc.c | 22 +++++++++++++++++++++-
+ 1 file changed, 21 insertions(+), 1 deletion(-)
+
+--- a/drivers/iio/adc/rockchip_saradc.c
++++ b/drivers/iio/adc/rockchip_saradc.c
+@@ -35,7 +35,7 @@
+ #define SARADC_DLY_PU_SOC_MASK		0x3f
+ 
+ #define SARADC_TIMEOUT			msecs_to_jiffies(100)
+-#define SARADC_MAX_CHANNELS		6
++#define SARADC_MAX_CHANNELS		8
+ 
+ struct rockchip_saradc_data {
+ 	const struct iio_chan_spec	*channels;
+@@ -192,6 +192,23 @@ static const struct rockchip_saradc_data
+ 	.clk_rate = 1000000,
+ };
+ 
++static const struct iio_chan_spec rockchip_rk3568_saradc_iio_channels[] = {
++	SARADC_CHANNEL(0, "adc0", 10),
++	SARADC_CHANNEL(1, "adc1", 10),
++	SARADC_CHANNEL(2, "adc2", 10),
++	SARADC_CHANNEL(3, "adc3", 10),
++	SARADC_CHANNEL(4, "adc4", 10),
++	SARADC_CHANNEL(5, "adc5", 10),
++	SARADC_CHANNEL(6, "adc6", 10),
++	SARADC_CHANNEL(7, "adc7", 10),
++};
++
++static const struct rockchip_saradc_data rk3568_saradc_data = {
++	.channels = rockchip_rk3568_saradc_iio_channels,
++	.num_channels = ARRAY_SIZE(rockchip_rk3568_saradc_iio_channels),
++	.clk_rate = 1000000,
++};
++
+ static const struct of_device_id rockchip_saradc_match[] = {
+ 	{
+ 		.compatible = "rockchip,saradc",
+@@ -202,6 +219,9 @@ static const struct of_device_id rockchi
+ 	}, {
+ 		.compatible = "rockchip,rk3399-saradc",
+ 		.data = &rk3399_saradc_data,
++	}, {
++		.compatible = "rockchip,rk3568-saradc",
++		.data = &rk3568_saradc_data,
+ 	},
+ 	{},
+ };

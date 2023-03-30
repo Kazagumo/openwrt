@@ -1,0 +1,67 @@
+From e9b21c96181c36343597ce789e386d296f93a23b Mon Sep 17 00:00:00 2001
+From: Cristian Marussi <cristian.marussi@arm.com>
+Date: Tue, 3 Aug 2021 14:10:15 +0100
+Subject: [PATCH] firmware: arm_scmi: Make .clear_channel optional
+
+Make transport operation .clear_channel optional since some transports
+do not need it and so avoid to have them implement dummy callbacks.
+
+Link: https://lore.kernel.org/r/20210803131024.40280-7-cristian.marussi@arm.com
+Signed-off-by: Cristian Marussi <cristian.marussi@arm.com>
+Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+---
+ drivers/firmware/arm_scmi/driver.c | 15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
+
+--- a/drivers/firmware/arm_scmi/driver.c
++++ b/drivers/firmware/arm_scmi/driver.c
+@@ -600,6 +600,13 @@ static inline void scmi_xfer_command_rel
+ 	__scmi_xfer_put(&info->tx_minfo, xfer);
+ }
+ 
++static inline void scmi_clear_channel(struct scmi_info *info,
++				      struct scmi_chan_info *cinfo)
++{
++	if (info->desc->ops->clear_channel)
++		info->desc->ops->clear_channel(cinfo);
++}
++
+ static void scmi_handle_notification(struct scmi_chan_info *cinfo, u32 msg_hdr)
+ {
+ 	struct scmi_xfer *xfer;
+@@ -613,7 +620,7 @@ static void scmi_handle_notification(str
+ 	if (IS_ERR(xfer)) {
+ 		dev_err(dev, "failed to get free message slot (%ld)\n",
+ 			PTR_ERR(xfer));
+-		info->desc->ops->clear_channel(cinfo);
++		scmi_clear_channel(info, cinfo);
+ 		return;
+ 	}
+ 
+@@ -629,7 +636,7 @@ static void scmi_handle_notification(str
+ 
+ 	__scmi_xfer_put(minfo, xfer);
+ 
+-	info->desc->ops->clear_channel(cinfo);
++	scmi_clear_channel(info, cinfo);
+ }
+ 
+ static void scmi_handle_response(struct scmi_chan_info *cinfo, u32 msg_hdr)
+@@ -639,7 +646,7 @@ static void scmi_handle_response(struct
+ 
+ 	xfer = scmi_xfer_command_acquire(cinfo, msg_hdr);
+ 	if (IS_ERR(xfer)) {
+-		info->desc->ops->clear_channel(cinfo);
++		scmi_clear_channel(info, cinfo);
+ 		return;
+ 	}
+ 
+@@ -654,7 +661,7 @@ static void scmi_handle_response(struct
+ 			   xfer->hdr.type);
+ 
+ 	if (xfer->hdr.type == MSG_TYPE_DELAYED_RESP) {
+-		info->desc->ops->clear_channel(cinfo);
++		scmi_clear_channel(info, cinfo);
+ 		complete(xfer->async_done);
+ 	} else {
+ 		complete(&xfer->done);

@@ -1,0 +1,64 @@
+From 2916059147ea38f76787d7b38dee883da2e9def2 Mon Sep 17 00:00:00 2001
+From: Thomas Zimmermann <tzimmermann@suse.de>
+Date: Mon, 12 Apr 2021 15:10:41 +0200
+Subject: [PATCH] drm/aperture: Add infrastructure for aperture ownership
+
+Platform devices might operate on firmware framebuffers, such as VESA
+or EFI. Before a native driver for the graphics hardware can take over
+the device, it has to remove any platform driver that operates on the
+firmware framebuffer. Aperture helpers provide the infrastructure for
+native drivers to remove the generic ones.
+
+For now, this only concerns generic fbdev drivers. Code for removing
+these is provided by drm_fb_helper_remove_conflicting_framebuffers() et
+al. Simply wrap these functions for now. At a later point, code can be
+added for generic DRM drivers to acquire firmware framebuffers.
+
+v2:
+	* fix docs for drm_aperture_remove_framebuffers()
+
+Signed-off-by: Thomas Zimmermann <tzimmermann@suse.de>
+Acked-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Acked-by: Jani Nikula <jani.nikula@intel.com>
+Link: https://patchwork.freedesktop.org/patch/msgid/20210412131043.5787-2-tzimmermann@suse.de
+---
+ Documentation/gpu/drm-internals.rst |  12 +++
+ drivers/gpu/drm/Makefile            |   2 +-
+ drivers/gpu/drm/drm_aperture.c      | 114 ++++++++++++++++++++++++++++
+ include/drm/drm_aperture.h          |  31 ++++++++
+ 4 files changed, 158 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/gpu/drm/drm_aperture.c
+ create mode 100644 include/drm/drm_aperture.h
+
+--- a/Documentation/gpu/drm-internals.rst
++++ b/Documentation/gpu/drm-internals.rst
+@@ -75,6 +75,18 @@ update it, its value is mostly useless.
+ kernel log at initialization time and passes it to userspace through the
+ DRM_IOCTL_VERSION ioctl.
+ 
++Managing Ownership of the Framebuffer Aperture
++----------------------------------------------
++
++.. kernel-doc:: drivers/gpu/drm/drm_aperture.c
++   :doc: overview
++
++.. kernel-doc:: include/drm/drm_aperture.h
++   :internal:
++
++.. kernel-doc:: drivers/gpu/drm/drm_aperture.c
++   :export:
++
+ Device Instance and Driver Handling
+ -----------------------------------
+ 
+--- a/drivers/gpu/drm/Makefile
++++ b/drivers/gpu/drm/Makefile
+@@ -3,7 +3,7 @@
+ # Makefile for the drm device driver.  This driver provides support for the
+ # Direct Rendering Infrastructure (DRI) in XFree86 4.1.0 and higher.
+ 
+-drm-y       :=	drm_auth.o drm_cache.o \
++drm-y       :=	drm_aperture.o drm_auth.o drm_cache.o \
+ 		drm_file.o drm_gem.o drm_ioctl.o drm_irq.o \
+ 		drm_memory.o drm_drv.o \
+ 		drm_sysfs.o drm_hashtab.o drm_mm.o \

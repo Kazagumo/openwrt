@@ -1,0 +1,207 @@
+From f3690d9729105963661d06c8cfd752ff1fa2499c Mon Sep 17 00:00:00 2001
+From: Cristian Marussi <cristian.marussi@arm.com>
+Date: Tue, 16 Mar 2021 12:48:51 +0000
+Subject: [PATCH] firmware: arm_scmi: Remove legacy scmi_sensor_ops protocol
+ interface
+
+Now that all the SCMI driver users have been migrated to the new interface
+remove the legacy interface and all the transient code.
+
+Link: https://lore.kernel.org/r/20210316124903.35011-27-cristian.marussi@arm.com
+Tested-by: Florian Fainelli <f.fainelli@gmail.com>
+Signed-off-by: Cristian Marussi <cristian.marussi@arm.com>
+Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+---
+ drivers/firmware/arm_scmi/sensors.c | 82 -----------------------------
+ include/linux/scmi_protocol.h       | 19 -------
+ 2 files changed, 101 deletions(-)
+
+--- a/drivers/firmware/arm_scmi/sensors.c
++++ b/drivers/firmware/arm_scmi/sensors.c
+@@ -624,17 +624,6 @@ scmi_sensor_trip_point_config(const stru
+ 	return ret;
+ }
+ 
+-static int
+-__scmi_sensor_trip_point_config(const struct scmi_handle *handle,
+-				u32 sensor_id, u8 trip_id, u64 trip_value)
+-{
+-	const struct scmi_protocol_handle *ph =
+-		scmi_map_protocol_handle(handle, SCMI_PROTOCOL_SENSOR);
+-
+-	return scmi_sensor_trip_point_config(ph, sensor_id, trip_id,
+-					     trip_value);
+-}
+-
+ static int scmi_sensor_config_get(const struct scmi_protocol_handle *ph,
+ 				  u32 sensor_id, u32 *sensor_config)
+ {
+@@ -660,15 +649,6 @@ static int scmi_sensor_config_get(const
+ 	return ret;
+ }
+ 
+-static int __scmi_sensor_config_get(const struct scmi_handle *handle,
+-				    u32 sensor_id, u32 *sensor_config)
+-{
+-	const struct scmi_protocol_handle *ph =
+-		scmi_map_protocol_handle(handle, SCMI_PROTOCOL_SENSOR);
+-
+-	return scmi_sensor_config_get(ph, sensor_id, sensor_config);
+-}
+-
+ static int scmi_sensor_config_set(const struct scmi_protocol_handle *ph,
+ 				  u32 sensor_id, u32 sensor_config)
+ {
+@@ -697,15 +677,6 @@ static int scmi_sensor_config_set(const
+ 	return ret;
+ }
+ 
+-static int __scmi_sensor_config_set(const struct scmi_handle *handle,
+-				    u32 sensor_id, u32 sensor_config)
+-{
+-	const struct scmi_protocol_handle *ph =
+-		scmi_map_protocol_handle(handle, SCMI_PROTOCOL_SENSOR);
+-
+-	return scmi_sensor_config_set(ph, sensor_id, sensor_config);
+-}
+-
+ /**
+  * scmi_sensor_reading_get  - Read scalar sensor value
+  * @ph: Protocol handle
+@@ -760,15 +731,6 @@ static int scmi_sensor_reading_get(const
+ 	return ret;
+ }
+ 
+-static int __scmi_sensor_reading_get(const struct scmi_handle *handle,
+-				     u32 sensor_id, u64 *value)
+-{
+-	const struct scmi_protocol_handle *ph =
+-		scmi_map_protocol_handle(handle, SCMI_PROTOCOL_SENSOR);
+-
+-	return scmi_sensor_reading_get(ph, sensor_id, value);
+-}
+-
+ static inline void
+ scmi_parse_sensor_readings(struct scmi_sensor_reading *out,
+ 			   const struct scmi_sensor_reading_le *in)
+@@ -847,18 +809,6 @@ scmi_sensor_reading_get_timestamped(cons
+ 	return ret;
+ }
+ 
+-static int
+-__scmi_sensor_reading_get_timestamped(const struct scmi_handle *handle,
+-				      u32 sensor_id, u8 count,
+-				      struct scmi_sensor_reading *readings)
+-{
+-	const struct scmi_protocol_handle *ph =
+-		scmi_map_protocol_handle(handle, SCMI_PROTOCOL_SENSOR);
+-
+-	return scmi_sensor_reading_get_timestamped(ph, sensor_id, count,
+-						   readings);
+-}
+-
+ static const struct scmi_sensor_info *
+ scmi_sensor_info_get(const struct scmi_protocol_handle *ph, u32 sensor_id)
+ {
+@@ -867,15 +817,6 @@ scmi_sensor_info_get(const struct scmi_p
+ 	return si->sensors + sensor_id;
+ }
+ 
+-static const struct scmi_sensor_info *
+-__scmi_sensor_info_get(const struct scmi_handle *handle, u32 sensor_id)
+-{
+-	const struct scmi_protocol_handle *ph =
+-		scmi_map_protocol_handle(handle, SCMI_PROTOCOL_SENSOR);
+-
+-	return scmi_sensor_info_get(ph, sensor_id);
+-}
+-
+ static int scmi_sensor_count_get(const struct scmi_protocol_handle *ph)
+ {
+ 	struct sensors_info *si = ph->get_priv(ph);
+@@ -883,24 +824,6 @@ static int scmi_sensor_count_get(const s
+ 	return si->num_sensors;
+ }
+ 
+-static int __scmi_sensor_count_get(const struct scmi_handle *handle)
+-{
+-	const struct scmi_protocol_handle *ph =
+-		scmi_map_protocol_handle(handle, SCMI_PROTOCOL_SENSOR);
+-
+-	return scmi_sensor_count_get(ph);
+-}
+-
+-static const struct scmi_sensor_ops sensor_ops = {
+-	.count_get = __scmi_sensor_count_get,
+-	.info_get = __scmi_sensor_info_get,
+-	.trip_point_config = __scmi_sensor_trip_point_config,
+-	.reading_get = __scmi_sensor_reading_get,
+-	.reading_get_timestamped = __scmi_sensor_reading_get_timestamped,
+-	.config_get = __scmi_sensor_config_get,
+-	.config_set = __scmi_sensor_config_set,
+-};
+-
+ static const struct scmi_sensor_proto_ops sensor_proto_ops = {
+ 	.count_get = scmi_sensor_count_get,
+ 	.info_get = scmi_sensor_info_get,
+@@ -1040,7 +963,6 @@ static int scmi_sensors_protocol_init(co
+ 	u32 version;
+ 	int ret;
+ 	struct sensors_info *sinfo;
+-	struct scmi_handle *handle;
+ 
+ 	ph->xops->version_get(ph, &version);
+ 
+@@ -1064,10 +986,6 @@ static int scmi_sensors_protocol_init(co
+ 	if (ret)
+ 		return ret;
+ 
+-	/* Transient code for legacy ops interface */
+-	handle = scmi_map_scmi_handle(ph);
+-	handle->sensor_ops = &sensor_ops;
+-
+ 	return ph->set_priv(ph, sinfo);
+ }
+ 
+--- a/include/linux/scmi_protocol.h
++++ b/include/linux/scmi_protocol.h
+@@ -463,23 +463,6 @@ struct scmi_sensor_proto_ops {
+ 			  u32 sensor_id, u32 sensor_config);
+ };
+ 
+-struct scmi_sensor_ops {
+-	int (*count_get)(const struct scmi_handle *handle);
+-	const struct scmi_sensor_info *(*info_get)
+-		(const struct scmi_handle *handle, u32 sensor_id);
+-	int (*trip_point_config)(const struct scmi_handle *handle,
+-				 u32 sensor_id, u8 trip_id, u64 trip_value);
+-	int (*reading_get)(const struct scmi_handle *handle, u32 sensor_id,
+-			   u64 *value);
+-	int (*reading_get_timestamped)(const struct scmi_handle *handle,
+-				       u32 sensor_id, u8 count,
+-				       struct scmi_sensor_reading *readings);
+-	int (*config_get)(const struct scmi_handle *handle,
+-			  u32 sensor_id, u32 *sensor_config);
+-	int (*config_set)(const struct scmi_handle *handle,
+-			  u32 sensor_id, u32 sensor_config);
+-};
+-
+ /**
+  * struct scmi_reset_proto_ops - represents the various operations provided
+  *	by SCMI Reset Protocol
+@@ -622,7 +605,6 @@ struct scmi_notify_ops {
+  *
+  * @dev: pointer to the SCMI device
+  * @version: pointer to the structure containing SCMI version information
+- * @sensor_ops: pointer to set of sensor protocol operations
+  * @voltage_ops: pointer to set of voltage protocol operations
+  * @devm_protocol_get: devres managed method to acquire a protocol and get specific
+  *		       operations and a dedicated protocol handler
+@@ -636,7 +618,6 @@ struct scmi_notify_ops {
+ struct scmi_handle {
+ 	struct device *dev;
+ 	struct scmi_revision_info *version;
+-	const struct scmi_sensor_ops *sensor_ops;
+ 	const struct scmi_voltage_ops *voltage_ops;
+ 
+ 	const void __must_check *

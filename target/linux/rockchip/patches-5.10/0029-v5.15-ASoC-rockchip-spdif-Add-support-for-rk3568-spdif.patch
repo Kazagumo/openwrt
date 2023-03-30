@@ -1,0 +1,26 @@
+From c5d4f09feb9f74e704d87a304f0c20001488fe10 Mon Sep 17 00:00:00 2001
+From: Sugar Zhang <sugar.zhang@rock-chips.com>
+Date: Tue, 24 Aug 2021 18:16:01 +0800
+Subject: [PATCH] ASoC: rockchip: spdif: Add support for rk3568 spdif
+
+This patch adds support for rk3568 spdif which is the same
+with rk3366.
+
+Signed-off-by: Sugar Zhang <sugar.zhang@rock-chips.com>
+Link: https://lore.kernel.org/r/1629800162-12824-4-git-send-email-sugar.zhang@rock-chips.com
+Signed-off-by: Mark Brown <broonie@kernel.org>
+---
+ sound/soc/rockchip/rockchip_spdif.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/sound/soc/rockchip/rockchip_spdif.c
++++ b/sound/soc/rockchip/rockchip_spdif.c
+@@ -58,6 +58,8 @@ static const struct of_device_id rk_spdi
+ 	  .data = (void *)RK_SPDIF_RK3366 },
+ 	{ .compatible = "rockchip,rk3399-spdif",
+ 	  .data = (void *)RK_SPDIF_RK3366 },
++	{ .compatible = "rockchip,rk3568-spdif",
++	  .data = (void *)RK_SPDIF_RK3366 },
+ 	{},
+ };
+ MODULE_DEVICE_TABLE(of, rk_spdif_match);

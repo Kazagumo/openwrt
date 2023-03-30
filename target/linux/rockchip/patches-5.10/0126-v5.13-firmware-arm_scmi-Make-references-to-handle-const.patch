@@ -1,0 +1,77 @@
+From f0e73cee26dd3edd0158dba33956f63596273ab9 Mon Sep 17 00:00:00 2001
+From: Cristian Marussi <cristian.marussi@arm.com>
+Date: Tue, 16 Mar 2021 12:48:56 +0000
+Subject: [PATCH] firmware: arm_scmi: Make references to handle const
+
+Now that all the protocol private variable data have been moved out of
+struct scmi_handle, mark all of its references as const.
+
+Link: https://lore.kernel.org/r/20210316124903.35011-32-cristian.marussi@arm.com
+Tested-by: Florian Fainelli <f.fainelli@gmail.com>
+Signed-off-by: Cristian Marussi <cristian.marussi@arm.com>
+Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+---
+ drivers/firmware/arm_scmi/common.h |  4 ++--
+ drivers/firmware/arm_scmi/driver.c | 10 +++++-----
+ 2 files changed, 7 insertions(+), 7 deletions(-)
+
+--- a/drivers/firmware/arm_scmi/common.h
++++ b/drivers/firmware/arm_scmi/common.h
+@@ -276,8 +276,8 @@ void __exit scmi_##name##_unregister(voi
+ 
+ const struct scmi_protocol *scmi_protocol_get(int protocol_id);
+ 
+-int scmi_protocol_acquire(struct scmi_handle *handle, u8 protocol_id);
+-void scmi_protocol_release(struct scmi_handle *handle, u8 protocol_id);
++int scmi_protocol_acquire(const struct scmi_handle *handle, u8 protocol_id);
++void scmi_protocol_release(const struct scmi_handle *handle, u8 protocol_id);
+ 
+ /* SCMI Transport */
+ /**
+--- a/drivers/firmware/arm_scmi/driver.c
++++ b/drivers/firmware/arm_scmi/driver.c
+@@ -748,7 +748,7 @@ scmi_alloc_init_protocol_instance(struct
+ 	int ret = -ENOMEM;
+ 	void *gid;
+ 	struct scmi_protocol_instance *pi;
+-	struct scmi_handle *handle = &info->handle;
++	const struct scmi_handle *handle = &info->handle;
+ 
+ 	/* Protocol specific devres group */
+ 	gid = devres_open_group(handle->dev, NULL, GFP_KERNEL);
+@@ -814,7 +814,7 @@ out:
+  * Return: A reference to an initialized protocol instance or error on failure.
+  */
+ static struct scmi_protocol_instance * __must_check
+-scmi_get_protocol_instance(struct scmi_handle *handle, u8 protocol_id)
++scmi_get_protocol_instance(const struct scmi_handle *handle, u8 protocol_id)
+ {
+ 	struct scmi_protocol_instance *pi;
+ 	struct scmi_info *info = handle_to_scmi_info(handle);
+@@ -849,7 +849,7 @@ scmi_get_protocol_instance(struct scmi_h
+  *
+  * Return: 0 if protocol was acquired successfully.
+  */
+-int scmi_protocol_acquire(struct scmi_handle *handle, u8 protocol_id)
++int scmi_protocol_acquire(const struct scmi_handle *handle, u8 protocol_id)
+ {
+ 	return PTR_ERR_OR_ZERO(scmi_get_protocol_instance(handle, protocol_id));
+ }
+@@ -862,7 +862,7 @@ int scmi_protocol_acquire(struct scmi_ha
+  * Remove one user for the specified protocol and triggers de-initialization
+  * and resources de-allocation once the last user has gone.
+  */
+-void scmi_protocol_release(struct scmi_handle *handle, u8 protocol_id)
++void scmi_protocol_release(const struct scmi_handle *handle, u8 protocol_id)
+ {
+ 	struct scmi_info *info = handle_to_scmi_info(handle);
+ 	struct scmi_protocol_instance *pi;
+@@ -917,7 +917,7 @@ scmi_is_protocol_implemented(const struc
+ }
+ 
+ struct scmi_protocol_devres {
+-	struct scmi_handle *handle;
++	const struct scmi_handle *handle;
+ 	u8 protocol_id;
+ };
+ 

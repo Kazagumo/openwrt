@@ -1,0 +1,98 @@
+From acc8b9d117912c2d5952868fba0d4fca49cde3c8 Mon Sep 17 00:00:00 2001
+From: Sugar Zhang <sugar.zhang@rock-chips.com>
+Date: Tue, 24 Aug 2021 18:16:00 +0800
+Subject: [PATCH] ASoC: rockchip: spdif: Fix some coding style
+
+This patch fix some coding style.
+
+Signed-off-by: Sugar Zhang <sugar.zhang@rock-chips.com>
+Link: https://lore.kernel.org/r/1629800162-12824-3-git-send-email-sugar.zhang@rock-chips.com
+Signed-off-by: Mark Brown <broonie@kernel.org>
+---
+ sound/soc/rockchip/rockchip_spdif.c | 34 ++++++++++++++---------------
+ 1 file changed, 17 insertions(+), 17 deletions(-)
+
+--- a/sound/soc/rockchip/rockchip_spdif.c
++++ b/sound/soc/rockchip/rockchip_spdif.c
+@@ -103,8 +103,8 @@ static int __maybe_unused rk_spdif_runti
+ }
+ 
+ static int rk_spdif_hw_params(struct snd_pcm_substream *substream,
+-				  struct snd_pcm_hw_params *params,
+-				  struct snd_soc_dai *dai)
++			      struct snd_pcm_hw_params *params,
++			      struct snd_soc_dai *dai)
+ {
+ 	struct rk_spdif_dev *spdif = snd_soc_dai_get_drvdata(dai);
+ 	unsigned int val = SPDIF_CFGR_HALFWORD_ENABLE;
+@@ -137,15 +137,15 @@ static int rk_spdif_hw_params(struct snd
+ 	}
+ 
+ 	ret = regmap_update_bits(spdif->regmap, SPDIF_CFGR,
+-		SPDIF_CFGR_CLK_DIV_MASK | SPDIF_CFGR_HALFWORD_ENABLE |
+-		SDPIF_CFGR_VDW_MASK,
+-		val);
++				 SPDIF_CFGR_CLK_DIV_MASK |
++				 SPDIF_CFGR_HALFWORD_ENABLE |
++				 SDPIF_CFGR_VDW_MASK, val);
+ 
+ 	return ret;
+ }
+ 
+ static int rk_spdif_trigger(struct snd_pcm_substream *substream,
+-				int cmd, struct snd_soc_dai *dai)
++			    int cmd, struct snd_soc_dai *dai)
+ {
+ 	struct rk_spdif_dev *spdif = snd_soc_dai_get_drvdata(dai);
+ 	int ret;
+@@ -155,31 +155,31 @@ static int rk_spdif_trigger(struct snd_p
+ 	case SNDRV_PCM_TRIGGER_RESUME:
+ 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
+ 		ret = regmap_update_bits(spdif->regmap, SPDIF_DMACR,
+-				   SPDIF_DMACR_TDE_ENABLE |
+-				   SPDIF_DMACR_TDL_MASK,
+-				   SPDIF_DMACR_TDE_ENABLE |
+-				   SPDIF_DMACR_TDL(16));
++					 SPDIF_DMACR_TDE_ENABLE |
++					 SPDIF_DMACR_TDL_MASK,
++					 SPDIF_DMACR_TDE_ENABLE |
++					 SPDIF_DMACR_TDL(16));
+ 
+ 		if (ret != 0)
+ 			return ret;
+ 
+ 		ret = regmap_update_bits(spdif->regmap, SPDIF_XFER,
+-				   SPDIF_XFER_TXS_START,
+-				   SPDIF_XFER_TXS_START);
++					 SPDIF_XFER_TXS_START,
++					 SPDIF_XFER_TXS_START);
+ 		break;
+ 	case SNDRV_PCM_TRIGGER_SUSPEND:
+ 	case SNDRV_PCM_TRIGGER_STOP:
+ 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
+ 		ret = regmap_update_bits(spdif->regmap, SPDIF_DMACR,
+-				   SPDIF_DMACR_TDE_ENABLE,
+-				   SPDIF_DMACR_TDE_DISABLE);
++					 SPDIF_DMACR_TDE_ENABLE,
++					 SPDIF_DMACR_TDE_DISABLE);
+ 
+ 		if (ret != 0)
+ 			return ret;
+ 
+ 		ret = regmap_update_bits(spdif->regmap, SPDIF_XFER,
+-				   SPDIF_XFER_TXS_START,
+-				   SPDIF_XFER_TXS_STOP);
++					 SPDIF_XFER_TXS_START,
++					 SPDIF_XFER_TXS_STOP);
+ 		break;
+ 	default:
+ 		ret = -EINVAL;
+@@ -293,7 +293,7 @@ static int rk_spdif_probe(struct platfor
+ 		grf = syscon_regmap_lookup_by_phandle(np, "rockchip,grf");
+ 		if (IS_ERR(grf)) {
+ 			dev_err(&pdev->dev,
+-				"rockchip_spdif missing 'rockchip,grf' \n");
++				"rockchip_spdif missing 'rockchip,grf'\n");
+ 			return PTR_ERR(grf);
+ 		}
+ 

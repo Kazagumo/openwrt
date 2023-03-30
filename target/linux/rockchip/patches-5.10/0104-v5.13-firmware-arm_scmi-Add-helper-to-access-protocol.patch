@@ -1,0 +1,59 @@
+From 3d5d6e84ea0e9cf985b1d0d8d359fe693f2466e4 Mon Sep 17 00:00:00 2001
+From: Cristian Marussi <cristian.marussi@arm.com>
+Date: Tue, 16 Mar 2021 12:48:34 +0000
+Subject: [PATCH] firmware: arm_scmi: Add helper to access protocol
+ revision/version
+
+Add an helper to access from a protocol handle, the SCMI version data
+which is exposed on sysfs. Such helper will be needed by SCMI base
+protocol initialization once it will be moved to new protocol handles
+scheme.
+
+Link: https://lore.kernel.org/r/20210316124903.35011-10-cristian.marussi@arm.com
+Tested-by: Florian Fainelli <f.fainelli@gmail.com>
+Signed-off-by: Cristian Marussi <cristian.marussi@arm.com>
+Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+---
+ drivers/firmware/arm_scmi/common.h |  2 ++
+ drivers/firmware/arm_scmi/driver.c | 19 +++++++++++++++++++
+ 2 files changed, 21 insertions(+)
+
+--- a/drivers/firmware/arm_scmi/common.h
++++ b/drivers/firmware/arm_scmi/common.h
+@@ -215,6 +215,8 @@ struct scmi_xfer_ops {
+ 			 struct scmi_xfer *xfer);
+ };
+ 
++struct scmi_revision_info *
++scmi_revision_area_get(const struct scmi_protocol_handle *ph);
+ int scmi_handle_put(const struct scmi_handle *handle);
+ struct scmi_handle *scmi_handle_get(struct device *dev);
+ void scmi_set_handle(struct scmi_device *scmi_dev);
+--- a/drivers/firmware/arm_scmi/driver.c
++++ b/drivers/firmware/arm_scmi/driver.c
+@@ -708,6 +708,25 @@ static const struct scmi_xfer_ops xfer_o
+ };
+ 
+ /**
++ * scmi_revision_area_get  - Retrieve version memory area.
++ *
++ * @ph: A reference to the protocol handle.
++ *
++ * A helper to grab the version memory area reference during SCMI Base protocol
++ * initialization.
++ *
++ * Return: A reference to the version memory area associated to the SCMI
++ *	   instance underlying this protocol handle.
++ */
++struct scmi_revision_info *
++scmi_revision_area_get(const struct scmi_protocol_handle *ph)
++{
++	const struct scmi_protocol_instance *pi = ph_to_pi(ph);
++
++	return pi->handle->version;
++}
++
++/**
+  * scmi_alloc_init_protocol_instance  - Allocate and initialize a protocol
+  * instance descriptor.
+  * @info: The reference to the related SCMI instance.

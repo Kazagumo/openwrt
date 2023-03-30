@@ -1,0 +1,48 @@
+From 936ee2675eee1faca0dcdfa79165c7990422e0fc Mon Sep 17 00:00:00 2001
+From: Jianqun Xu <jay.xu@rock-chips.com>
+Date: Mon, 16 Aug 2021 09:20:53 +0800
+Subject: [PATCH] gpio/rockchip: add driver for rockchip gpio
+
+This patch add support for rockchip gpio controller, which is supported
+in pinctrl driver in the past.
+
+With this patch, the pinctrl-rockchip driver will drop gpio related
+codes and populate platform driver to gpio-rockchip.
+
+Signed-off-by: Jianqun Xu <jay.xu@rock-chips.com>
+Link: https://lore.kernel.org/r/20210816012053.1119069-1-jay.xu@rock-chips.com
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/gpio/Kconfig         |   8 +
+ drivers/gpio/Makefile        |   1 +
+ drivers/gpio/gpio-rockchip.c | 626 +++++++++++++++++++++++++++++++++++
+ 3 files changed, 635 insertions(+)
+ create mode 100644 drivers/gpio/gpio-rockchip.c
+
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -495,6 +495,14 @@ config GPIO_REG
+ 	  A 32-bit single register GPIO fixed in/out implementation.  This
+ 	  can be used to represent any register as a set of GPIO signals.
+ 
++config GPIO_ROCKCHIP
++	tristate "Rockchip GPIO support"
++	depends on ARCH_ROCKCHIP || COMPILE_TEST
++	select GPIOLIB_IRQCHIP
++	default ARCH_ROCKCHIP
++	help
++	  Say yes here to support GPIO on Rockchip SoCs.
++
+ config GPIO_SAMA5D2_PIOBU
+ 	tristate "SAMA5D2 PIOBU GPIO support"
+ 	depends on MFD_SYSCON
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -126,6 +126,7 @@ obj-$(CONFIG_GPIO_RCAR)			+= gpio-rcar.o
+ obj-$(CONFIG_GPIO_RDA)			+= gpio-rda.o
+ obj-$(CONFIG_GPIO_RDC321X)		+= gpio-rdc321x.o
+ obj-$(CONFIG_GPIO_REG)			+= gpio-reg.o
++obj-$(CONFIG_GPIO_ROCKCHIP)	+= gpio-rockchip.o
+ obj-$(CONFIG_ARCH_SA1100)		+= gpio-sa1100.o
+ obj-$(CONFIG_GPIO_SAMA5D2_PIOBU)	+= gpio-sama5d2-piobu.o
+ obj-$(CONFIG_GPIO_SCH311X)		+= gpio-sch311x.o

@@ -1,0 +1,77 @@
+From 8848f0665b3cd4fbb3107b384f5205380c90634d Mon Sep 17 00:00:00 2001
+From: Marc Zyngier <maz@kernel.org>
+Date: Tue, 15 Jun 2021 12:12:24 +0100
+Subject: [PATCH] arm64: Add cpuidle context save/restore helpers
+
+As we need to start doing some additional work on all idle
+paths, let's introduce a set of macros that will perform
+the work related to the GICv3 pseudo-NMI idle entry exit.
+
+Stubs are introduced to 32bit ARM for compatibility.
+As these helpers are currently unused, there is no functional
+change.
+
+Tested-by: Valentin Schneider <valentin.schneider@arm.com>
+Reviewed-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Signed-off-by: Marc Zyngier <maz@kernel.org>
+Link: https://lore.kernel.org/r/20210615111227.2454465-2-maz@kernel.org
+Signed-off-by: Will Deacon <will@kernel.org>
+---
+ arch/arm/include/asm/cpuidle.h   |  5 +++++
+ arch/arm64/include/asm/cpuidle.h | 35 ++++++++++++++++++++++++++++++++
+ 2 files changed, 40 insertions(+)
+
+--- a/arch/arm/include/asm/cpuidle.h
++++ b/arch/arm/include/asm/cpuidle.h
+@@ -50,4 +50,9 @@ extern int arm_cpuidle_suspend(int index
+ 
+ extern int arm_cpuidle_init(int cpu);
+ 
++struct arm_cpuidle_irq_context { };
++
++#define arm_cpuidle_save_irq_context(c)		(void)c
++#define arm_cpuidle_restore_irq_context(c)	(void)c
++
+ #endif
+--- a/arch/arm64/include/asm/cpuidle.h
++++ b/arch/arm64/include/asm/cpuidle.h
+@@ -18,4 +18,39 @@ static inline int arm_cpuidle_suspend(in
+ 	return -EOPNOTSUPP;
+ }
+ #endif
++
++#ifdef CONFIG_ARM64_PSEUDO_NMI
++#include <asm/arch_gicv3.h>
++
++struct arm_cpuidle_irq_context {
++	unsigned long pmr;
++	unsigned long daif_bits;
++};
++
++#define arm_cpuidle_save_irq_context(__c)				\
++	do {								\
++		struct arm_cpuidle_irq_context *c = __c;		\
++		if (system_uses_irq_prio_masking()) {			\
++			c->daif_bits = read_sysreg(daif);		\
++			write_sysreg(c->daif_bits | PSR_I_BIT | PSR_F_BIT, \
++				     daif);				\
++			c->pmr = gic_read_pmr();			\
++			gic_write_pmr(GIC_PRIO_IRQON | GIC_PRIO_PSR_I_SET); \
++		}							\
++	} while (0)
++
++#define arm_cpuidle_restore_irq_context(__c)				\
++	do {								\
++		struct arm_cpuidle_irq_context *c = __c;		\
++		if (system_uses_irq_prio_masking()) {			\
++			gic_write_pmr(c->pmr);				\
++			write_sysreg(c->daif_bits, daif);		\
++		}							\
++	} while (0)
++#else
++struct arm_cpuidle_irq_context { };
++
++#define arm_cpuidle_save_irq_context(c)		(void)c
++#define arm_cpuidle_restore_irq_context(c)	(void)c
++#endif
+ #endif

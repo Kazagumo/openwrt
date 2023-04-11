@@ -1,0 +1,21 @@
+--- a/arch/arm64/boot/dts/rockchip/rk3568-nanopi-r5s.dtsi	2023-04-12 03:59:22.705519909 +0800
++++ b/arch/arm64/boot/dts/rockchip/rk3568-nanopi-r5s.dtsi	2023-04-12 04:00:45.619796759 +0800
+@@ -13,6 +13,7 @@
+ #include <dt-bindings/pinctrl/rockchip.h>
+ #include <dt-bindings/soc/rockchip,vop2.h>
+ #include "rk3568.dtsi"
++#include "rk356x-opp-oc.dtsi"
+ 
+ / {
+ 	aliases {
+@@ -197,8 +198,8 @@
+ 		regulator-name = "vdd_cpu";
+ 		regulator-always-on;
+ 		regulator-boot-on;
+-		regulator-min-microvolt = <800000>;
+-		regulator-max-microvolt = <1150000>;
++		regulator-min-microvolt = <712500>;
++		regulator-max-microvolt = <1390000>;
+ 		regulator-ramp-delay = <2300>;
+ 		vin-supply = <&vcc5v0_sys>;
+ 

@@ -1,0 +1,65 @@
+From e6dd9d89a64e30b25339d0dbe5c5aa589db8d530 Mon Sep 17 00:00:00 2001
+From: David Brazdil <dbrazdil@google.com>
+Date: Wed, 2 Dec 2020 18:40:59 +0000
+Subject: [PATCH] psci: Support psci_ops.get_version for v0.1
+
+KVM's host PSCI SMC filter needs to be aware of the PSCI version of the
+system but currently it is impossible to distinguish between v0.1 and
+PSCI disabled because both have get_version == NULL.
+
+Populate get_version for v0.1 with a function that returns a constant.
+
+psci_opt.get_version is currently unused so this has no effect on
+existing functionality.
+
+Signed-off-by: David Brazdil <dbrazdil@google.com>
+Signed-off-by: Marc Zyngier <maz@kernel.org>
+Acked-by: Mark Rutland <mark.rutland@arm.com>
+Link: https://lore.kernel.org/r/20201202184122.26046-4-dbrazdil@google.com
+---
+ drivers/firmware/psci/psci.c | 13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
+
+--- a/drivers/firmware/psci/psci.c
++++ b/drivers/firmware/psci/psci.c
+@@ -146,7 +146,12 @@ static int psci_to_linux_errno(int errno
+ 	return -EINVAL;
+ }
+ 
+-static u32 psci_get_version(void)
++static u32 psci_0_1_get_version(void)
++{
++	return PSCI_VERSION(0, 1);
++}
++
++static u32 psci_0_2_get_version(void)
+ {
+ 	return invoke_psci_fn(PSCI_0_2_FN_PSCI_VERSION, 0, 0, 0);
+ }
+@@ -421,7 +426,7 @@ static void __init psci_init_smccc(void)
+ static void __init psci_0_2_set_functions(void)
+ {
+ 	pr_info("Using standard PSCI v0.2 function IDs\n");
+-	psci_ops.get_version = psci_get_version;
++	psci_ops.get_version = psci_0_2_get_version;
+ 
+ 	psci_function_id[PSCI_FN_CPU_SUSPEND] =
+ 					PSCI_FN_NATIVE(0_2, CPU_SUSPEND);
+@@ -450,7 +455,7 @@ static void __init psci_0_2_set_function
+  */
+ static int __init psci_probe(void)
+ {
+-	u32 ver = psci_get_version();
++	u32 ver = psci_0_2_get_version();
+ 
+ 	pr_info("PSCIv%d.%d detected in firmware.\n",
+ 			PSCI_VERSION_MAJOR(ver),
+@@ -514,6 +519,8 @@ static int __init psci_0_1_init(struct d
+ 
+ 	pr_info("Using PSCI v0.1 Function IDs from DT\n");
+ 
++	psci_ops.get_version = psci_0_1_get_version;
++
+ 	if (!of_property_read_u32(np, "cpu_suspend", &id)) {
+ 		psci_function_id[PSCI_FN_CPU_SUSPEND] = id;
+ 		psci_ops.cpu_suspend = psci_cpu_suspend;

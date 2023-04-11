@@ -1,0 +1,58 @@
+From 6df3e14436f6ee254b1a4952d90ee8988be59c89 Mon Sep 17 00:00:00 2001
+From: David Brazdil <dbrazdil@google.com>
+Date: Wed, 2 Dec 2020 18:41:02 +0000
+Subject: [PATCH] psci: Add accessor for psci_0_1_function_ids
+
+Make it possible to retrieve a copy of the psci_0_1_function_ids struct.
+This is useful for KVM if it is configured to intercept host's PSCI SMCs.
+
+Signed-off-by: David Brazdil <dbrazdil@google.com>
+Signed-off-by: Marc Zyngier <maz@kernel.org>
+Acked-by: Mark Rutland <mark.rutland@arm.com>
+Link: https://lore.kernel.org/r/20201202184122.26046-7-dbrazdil@google.com
+---
+ drivers/firmware/psci/psci.c | 12 +++++-------
+ include/linux/psci.h         |  9 +++++++++
+ 2 files changed, 14 insertions(+), 7 deletions(-)
+
+--- a/drivers/firmware/psci/psci.c
++++ b/drivers/firmware/psci/psci.c
+@@ -58,15 +58,13 @@ typedef unsigned long (psci_fn)(unsigned
+ 				unsigned long, unsigned long);
+ static psci_fn *invoke_psci_fn;
+ 
+-struct psci_0_1_function_ids {
+-	u32 cpu_suspend;
+-	u32 cpu_on;
+-	u32 cpu_off;
+-	u32 migrate;
+-};
+-
+ static struct psci_0_1_function_ids psci_0_1_function_ids;
+ 
++struct psci_0_1_function_ids get_psci_0_1_function_ids(void)
++{
++	return psci_0_1_function_ids;
++}
++
+ #define PSCI_0_2_POWER_STATE_MASK		\
+ 				(PSCI_0_2_POWER_STATE_ID_MASK | \
+ 				PSCI_0_2_POWER_STATE_TYPE_MASK | \
+--- a/include/linux/psci.h
++++ b/include/linux/psci.h
+@@ -34,6 +34,15 @@ struct psci_operations {
+ 
+ extern struct psci_operations psci_ops;
+ 
++struct psci_0_1_function_ids {
++	u32 cpu_suspend;
++	u32 cpu_on;
++	u32 cpu_off;
++	u32 migrate;
++};
++
++struct psci_0_1_function_ids get_psci_0_1_function_ids(void);
++
+ #if defined(CONFIG_ARM_PSCI_FW)
+ int __init psci_dt_init(void);
+ #else

@@ -36,7 +36,7 @@ Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
 --- a/drivers/cpuidle/cpuidle-psci-domain.c
 +++ b/drivers/cpuidle/cpuidle-psci-domain.c
-@@ -327,6 +327,8 @@ struct device *psci_dt_attach_cpu(int cp
+@@ -328,6 +328,8 @@ struct device *psci_dt_attach_cpu(int cp
  	if (cpu_online(cpu))
  		pm_runtime_get_sync(dev);
  

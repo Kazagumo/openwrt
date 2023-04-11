@@ -443,7 +443,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  
  	ret = regmap_read(regmap, reg, &data);
  	if (ret)
-@@ -1837,7 +1881,9 @@ static int rockchip_set_pull(struct rock
+@@ -1846,7 +1890,9 @@ static int rockchip_set_pull(struct rock
  	if (ctrl->type == RK3066B)
  		return pull ? -EINVAL : 0;
  

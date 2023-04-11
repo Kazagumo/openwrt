@@ -28,7 +28,7 @@ Signed-off-by: Marc Zyngier <maz@kernel.org>
  #ifdef CONFIG_HANDLE_DOMAIN_IRQ
 --- a/kernel/irq/irqdesc.c
 +++ b/kernel/irq/irqdesc.c
-@@ -632,14 +632,8 @@ void irq_init_desc(unsigned int irq)
+@@ -635,14 +635,8 @@ void irq_init_desc(unsigned int irq)
  
  #endif /* !CONFIG_SPARSE_IRQ */
  
@@ -44,7 +44,7 @@ Signed-off-by: Marc Zyngier <maz@kernel.org>
  	struct irq_data *data;
  
  	if (!desc)
-@@ -652,6 +646,17 @@ int generic_handle_irq(unsigned int irq)
+@@ -655,6 +649,17 @@ int generic_handle_irq(unsigned int irq)
  	generic_handle_irq_desc(desc);
  	return 0;
  }
@@ -62,7 +62,7 @@ Signed-off-by: Marc Zyngier <maz@kernel.org>
  EXPORT_SYMBOL_GPL(generic_handle_irq);
  
  #ifdef CONFIG_HANDLE_DOMAIN_IRQ
-@@ -668,27 +673,32 @@ int __handle_domain_irq(struct irq_domai
+@@ -671,27 +676,32 @@ int __handle_domain_irq(struct irq_domai
  			bool lookup, struct pt_regs *regs)
  {
  	struct pt_regs *old_regs = set_irq_regs(regs);
@@ -109,7 +109,7 @@ Signed-off-by: Marc Zyngier <maz@kernel.org>
  	irq_exit();
  	set_irq_regs(old_regs);
  	return ret;
-@@ -709,7 +719,7 @@ int handle_domain_nmi(struct irq_domain
+@@ -712,7 +722,7 @@ int handle_domain_nmi(struct irq_domain
  		      struct pt_regs *regs)
  {
  	struct pt_regs *old_regs = set_irq_regs(regs);
@@ -118,7 +118,7 @@ Signed-off-by: Marc Zyngier <maz@kernel.org>
  	int ret = 0;
  
  	/*
-@@ -717,14 +727,14 @@ int handle_domain_nmi(struct irq_domain
+@@ -720,14 +730,14 @@ int handle_domain_nmi(struct irq_domain
  	 */
  	WARN_ON(!in_nmi());
  

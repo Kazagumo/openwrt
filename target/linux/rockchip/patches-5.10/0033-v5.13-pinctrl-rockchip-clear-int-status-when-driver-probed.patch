@@ -18,7 +18,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 
 --- a/drivers/pinctrl/pinctrl-rockchip.c
 +++ b/drivers/pinctrl/pinctrl-rockchip.c
-@@ -3448,6 +3448,7 @@ static int rockchip_interrupts_register(
+@@ -3215,6 +3215,7 @@ static int rockchip_interrupts_register(
  		 * things enabled, so for us that's all masked and all enabled.
  		 */
  		writel_relaxed(0xffffffff, bank->reg_base + GPIO_INTMASK);

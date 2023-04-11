@@ -15,7 +15,7 @@ Signed-off-by: Mark Brown <broonie@kernel.org>
 
 --- a/sound/soc/rockchip/rockchip_spdif.c
 +++ b/sound/soc/rockchip/rockchip_spdif.c
-@@ -247,6 +247,7 @@ static bool rk_spdif_rd_reg(struct devic
+@@ -248,6 +248,7 @@ static bool rk_spdif_rd_reg(struct devic
  	case SPDIF_INTCR:
  	case SPDIF_INTSR:
  	case SPDIF_XFER:
@@ -23,7 +23,7 @@ Signed-off-by: Mark Brown <broonie@kernel.org>
  		return true;
  	default:
  		return false;
-@@ -258,6 +259,7 @@ static bool rk_spdif_volatile_reg(struct
+@@ -259,6 +260,7 @@ static bool rk_spdif_volatile_reg(struct
  	switch (reg) {
  	case SPDIF_INTSR:
  	case SPDIF_SDBLR:

@@ -16,7 +16,7 @@ Signed-off-by: Marc Zyngier <maz@kernel.org>
 
 --- a/kernel/irq/irqdomain.c
 +++ b/kernel/irq/irqdomain.c
-@@ -141,7 +141,7 @@ struct irq_domain *__irq_domain_add(stru
+@@ -133,7 +133,7 @@ static struct irq_domain *__irq_domain_c
  		    (!IS_ENABLED(CONFIG_IRQ_DOMAIN_NOMAP) && direct_max)))
  		return NULL;
  

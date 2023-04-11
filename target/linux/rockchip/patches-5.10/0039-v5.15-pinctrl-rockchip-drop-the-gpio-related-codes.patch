@@ -46,7 +46,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  /**
   * Generate a bitmask for setting a value (v) with a write mask bit in hiword
   * register 31:16 area.
-@@ -2086,75 +2072,11 @@ static int rockchip_pmx_set(struct pinct
+@@ -2095,75 +2081,11 @@ static int rockchip_pmx_set(struct pinct
  	return 0;
  }
  
@@ -122,7 +122,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  };
  
  /*
-@@ -2185,15 +2107,13 @@ static bool rockchip_pinconf_pull_valid(
+@@ -2194,15 +2116,13 @@ static bool rockchip_pinconf_pull_valid(
  	return false;
  }
  
@@ -139,7 +139,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  	enum pin_config_param param;
  	u32 arg;
  	int i;
-@@ -2226,10 +2146,13 @@ static int rockchip_pinconf_set(struct p
+@@ -2235,10 +2155,13 @@ static int rockchip_pinconf_set(struct p
  				return rc;
  			break;
  		case PIN_CONFIG_OUTPUT:
@@ -157,7 +157,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  			if (rc)
  				return rc;
  			break;
-@@ -2267,6 +2190,7 @@ static int rockchip_pinconf_get(struct p
+@@ -2276,6 +2199,7 @@ static int rockchip_pinconf_get(struct p
  {
  	struct rockchip_pinctrl *info = pinctrl_dev_get_drvdata(pctldev);
  	struct rockchip_pin_bank *bank = pin_to_bank(info, pin);
@@ -165,7 +165,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  	enum pin_config_param param = pinconf_to_config_param(*config);
  	u16 arg;
  	int rc;
-@@ -2295,7 +2219,7 @@ static int rockchip_pinconf_get(struct p
+@@ -2304,7 +2228,7 @@ static int rockchip_pinconf_get(struct p
  		if (rc != RK_FUNC_GPIO)
  			return -EINVAL;
  
@@ -174,7 +174,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  		if (rc < 0)
  			return rc;
  
-@@ -2533,7 +2457,7 @@ static int rockchip_pinctrl_register(str
+@@ -2543,7 +2467,7 @@ static int rockchip_pinctrl_register(str
  	ctrldesc->npins = info->ctrl->nr_pins;
  
  	pdesc = pindesc;
@@ -183,7 +183,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  		pin_bank = &info->ctrl->pin_banks[bank];
  		for (pin = 0; pin < pin_bank->nr_pins; pin++, k++) {
  			pdesc->number = k;
-@@ -2553,526 +2477,9 @@ static int rockchip_pinctrl_register(str
+@@ -2563,526 +2487,9 @@ static int rockchip_pinctrl_register(str
  		return PTR_ERR(info->pctl_dev);
  	}
  
@@ -710,7 +710,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  static const struct of_device_id rockchip_pinctrl_dt_match[];
  
  /* retrieve the soc specific data */
-@@ -3082,7 +2489,6 @@ static struct rockchip_pin_ctrl *rockchi
+@@ -3092,7 +2499,6 @@ static struct rockchip_pin_ctrl *rockchi
  {
  	const struct of_device_id *match;
  	struct device_node *node = pdev->dev.of_node;
@@ -718,7 +718,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  	struct rockchip_pin_ctrl *ctrl;
  	struct rockchip_pin_bank *bank;
  	int grf_offs, pmu_offs, drv_grf_offs, drv_pmu_offs, i, j;
-@@ -3090,23 +2496,6 @@ static struct rockchip_pin_ctrl *rockchi
+@@ -3100,23 +2506,6 @@ static struct rockchip_pin_ctrl *rockchi
  	match = of_match_node(rockchip_pinctrl_dt_match, node);
  	ctrl = (struct rockchip_pin_ctrl *)match->data;
  
@@ -742,7 +742,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  	grf_offs = ctrl->grf_mux_offset;
  	pmu_offs = ctrl->pmu_mux_offset;
  	drv_pmu_offs = ctrl->pmu_drv_offset;
-@@ -3329,18 +2718,18 @@ static int rockchip_pinctrl_probe(struct
+@@ -3339,18 +2728,18 @@ static int rockchip_pinctrl_probe(struct
  			return PTR_ERR(info->regmap_pmu);
  	}
  

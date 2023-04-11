@@ -62,7 +62,7 @@ Signed-off-by: Marc Zyngier <maz@kernel.org>
  					     irq_hw_number_t hwirq)
 --- a/kernel/irq/irqdomain.c
 +++ b/kernel/irq/irqdomain.c
-@@ -895,29 +895,34 @@ void irq_dispose_mapping(unsigned int vi
+@@ -952,29 +952,34 @@ void irq_dispose_mapping(unsigned int vi
  EXPORT_SYMBOL_GPL(irq_dispose_mapping);
  
  /**
@@ -83,7 +83,7 @@ Signed-off-by: Marc Zyngier <maz@kernel.org>
 +	struct irq_desc *desc = NULL;
  	struct irq_data *data;
  
- 	/* Look for default domain if nececssary */
+ 	/* Look for default domain if necessary */
  	if (domain == NULL)
  		domain = irq_default_domain;
  	if (domain == NULL)
@@ -103,7 +103,7 @@ Signed-off-by: Marc Zyngier <maz@kernel.org>
  	}
  
  	rcu_read_lock();
-@@ -926,10 +931,17 @@ unsigned int irq_find_mapping(struct irq
+@@ -983,10 +988,17 @@ unsigned int irq_find_mapping(struct irq
  		data = rcu_dereference(domain->revmap[hwirq]);
  	else
  		data = radix_tree_lookup(&domain->revmap_tree, hwirq);

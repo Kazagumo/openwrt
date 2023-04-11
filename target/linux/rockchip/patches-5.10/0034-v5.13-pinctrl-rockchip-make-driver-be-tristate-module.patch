@@ -41,7 +41,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  #include <linux/of_address.h>
  #include <linux/of_irq.h>
  #include <linux/pinctrl/machine.h>
-@@ -4277,3 +4279,14 @@ static int __init rockchip_pinctrl_drv_r
+@@ -4085,3 +4087,14 @@ static int __init rockchip_pinctrl_drv_r
  	return platform_driver_register(&rockchip_pinctrl_driver);
  }
  postcore_initcall(rockchip_pinctrl_drv_register);

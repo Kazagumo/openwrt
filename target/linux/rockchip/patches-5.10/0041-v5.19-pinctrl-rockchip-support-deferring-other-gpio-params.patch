@@ -20,7 +20,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 
 --- a/drivers/pinctrl/pinctrl-rockchip.c
 +++ b/drivers/pinctrl/pinctrl-rockchip.c
-@@ -2107,19 +2107,20 @@ static bool rockchip_pinconf_pull_valid(
+@@ -2116,19 +2116,20 @@ static bool rockchip_pinconf_pull_valid(
  	return false;
  }
  
@@ -45,7 +45,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  
  	return 0;
  }
-@@ -2140,6 +2141,25 @@ static int rockchip_pinconf_set(struct p
+@@ -2149,6 +2150,25 @@ static int rockchip_pinconf_set(struct p
  		param = pinconf_to_config_param(configs[i]);
  		arg = pinconf_to_config_argument(configs[i]);
  
@@ -71,7 +71,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  		switch (param) {
  		case PIN_CONFIG_BIAS_DISABLE:
  			rc =  rockchip_set_pull(bank, pin - bank->pin_base,
-@@ -2168,22 +2188,6 @@ static int rockchip_pinconf_set(struct p
+@@ -2177,22 +2197,6 @@ static int rockchip_pinconf_set(struct p
  			if (rc != RK_FUNC_GPIO)
  				return -EINVAL;
  
@@ -94,7 +94,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  			rc = gpio->direction_output(gpio, pin - bank->pin_base,
  						    arg);
  			if (rc)
-@@ -2504,7 +2508,7 @@ static int rockchip_pinctrl_register(str
+@@ -2514,7 +2518,7 @@ static int rockchip_pinctrl_register(str
  			pdesc++;
  		}
  
@@ -103,7 +103,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  		mutex_init(&pin_bank->deferred_lock);
  	}
  
-@@ -2778,7 +2782,7 @@ static int rockchip_pinctrl_remove(struc
+@@ -2788,7 +2792,7 @@ static int rockchip_pinctrl_remove(struc
  {
  	struct rockchip_pinctrl *info = platform_get_drvdata(pdev);
  	struct rockchip_pin_bank *bank;
@@ -112,7 +112,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  	int i;
  
  	of_platform_depopulate(&pdev->dev);
-@@ -2787,9 +2791,9 @@ static int rockchip_pinctrl_remove(struc
+@@ -2797,9 +2801,9 @@ static int rockchip_pinctrl_remove(struc
  		bank = &info->ctrl->pin_banks[i];
  
  		mutex_lock(&bank->deferred_lock);

@@ -26,7 +26,7 @@ Signed-off-by: Will Deacon <will@kernel.org>
 
 --- a/drivers/firmware/psci/psci.c
 +++ b/drivers/firmware/psci/psci.c
-@@ -342,10 +342,15 @@ int psci_cpu_suspend_enter(u32 state)
+@@ -341,10 +341,15 @@ int psci_cpu_suspend_enter(u32 state)
  {
  	int ret;
  

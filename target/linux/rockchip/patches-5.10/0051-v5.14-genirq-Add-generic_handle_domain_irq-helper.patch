@@ -25,7 +25,7 @@ Signed-off-by: Marc Zyngier <maz@kernel.org>
  {
 --- a/kernel/irq/irqdesc.c
 +++ b/kernel/irq/irqdesc.c
-@@ -661,7 +661,24 @@ EXPORT_SYMBOL_GPL(generic_handle_irq);
+@@ -664,7 +664,24 @@ EXPORT_SYMBOL_GPL(generic_handle_irq);
  
  #ifdef CONFIG_HANDLE_DOMAIN_IRQ
  /**

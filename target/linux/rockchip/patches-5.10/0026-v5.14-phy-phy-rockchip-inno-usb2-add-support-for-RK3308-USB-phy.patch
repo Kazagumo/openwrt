@@ -16,7 +16,7 @@ Signed-off-by: Vinod Koul <vkoul@kernel.org>
 
 --- a/drivers/phy/rockchip/phy-rockchip-inno-usb2.c
 +++ b/drivers/phy/rockchip/phy-rockchip-inno-usb2.c
-@@ -1256,6 +1256,49 @@ static const struct rockchip_usb2phy_cfg
+@@ -1258,6 +1258,49 @@ static const struct rockchip_usb2phy_cfg
  	{ /* sentinel */ }
  };
  
@@ -66,7 +66,7 @@ Signed-off-by: Vinod Koul <vkoul@kernel.org>
  static const struct rockchip_usb2phy_cfg rk3328_phy_cfgs[] = {
  	{
  		.reg = 0x100,
-@@ -1425,6 +1468,7 @@ static const struct rockchip_usb2phy_cfg
+@@ -1427,6 +1470,7 @@ static const struct rockchip_usb2phy_cfg
  static const struct of_device_id rockchip_usb2phy_dt_match[] = {
  	{ .compatible = "rockchip,px30-usb2phy", .data = &rk3328_phy_cfgs },
  	{ .compatible = "rockchip,rk3228-usb2phy", .data = &rk3228_phy_cfgs },

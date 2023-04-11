@@ -34,7 +34,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 
 --- a/drivers/pinctrl/pinctrl-rockchip.c
 +++ b/drivers/pinctrl/pinctrl-rockchip.c
-@@ -2107,6 +2107,23 @@ static bool rockchip_pinconf_pull_valid(
+@@ -2116,6 +2116,23 @@ static bool rockchip_pinconf_pull_valid(
  	return false;
  }
  
@@ -58,7 +58,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  /* set the pin config settings for a specified pin */
  static int rockchip_pinconf_set(struct pinctrl_dev *pctldev, unsigned int pin,
  				unsigned long *configs, unsigned num_configs)
-@@ -2151,6 +2168,22 @@ static int rockchip_pinconf_set(struct p
+@@ -2160,6 +2177,22 @@ static int rockchip_pinconf_set(struct p
  			if (rc != RK_FUNC_GPIO)
  				return -EINVAL;
  
@@ -81,7 +81,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  			rc = gpio->direction_output(gpio, pin - bank->pin_base,
  						    arg);
  			if (rc)
-@@ -2219,6 +2252,11 @@ static int rockchip_pinconf_get(struct p
+@@ -2228,6 +2261,11 @@ static int rockchip_pinconf_get(struct p
  		if (rc != RK_FUNC_GPIO)
  			return -EINVAL;
  
@@ -93,7 +93,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  		rc = gpio->get(gpio, pin - bank->pin_base);
  		if (rc < 0)
  			return rc;
-@@ -2465,6 +2503,9 @@ static int rockchip_pinctrl_register(str
+@@ -2475,6 +2513,9 @@ static int rockchip_pinctrl_register(str
  						pin_bank->name, pin);
  			pdesc++;
  		}
@@ -103,7 +103,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  	}
  
  	ret = rockchip_pinctrl_parse_dt(pdev, info);
-@@ -2733,6 +2774,31 @@ static int rockchip_pinctrl_probe(struct
+@@ -2743,6 +2784,31 @@ static int rockchip_pinctrl_probe(struct
  	return 0;
  }
  
@@ -135,7 +135,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  static struct rockchip_pin_bank px30_pin_banks[] = {
  	PIN_BANK_IOMUX_FLAGS(0, 32, "gpio0", IOMUX_SOURCE_PMU,
  					     IOMUX_SOURCE_PMU,
-@@ -3192,6 +3258,7 @@ static const struct of_device_id rockchi
+@@ -3202,6 +3268,7 @@ static const struct of_device_id rockchi
  
  static struct platform_driver rockchip_pinctrl_driver = {
  	.probe		= rockchip_pinctrl_probe,

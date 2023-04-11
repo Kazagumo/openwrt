@@ -14,7 +14,7 @@ Signed-off-by: Mark Brown <broonie@kernel.org>
 
 --- a/sound/soc/rockchip/rockchip_spdif.c
 +++ b/sound/soc/rockchip/rockchip_spdif.c
-@@ -103,8 +103,8 @@ static int __maybe_unused rk_spdif_runti
+@@ -104,8 +104,8 @@ static int __maybe_unused rk_spdif_runti
  }
  
  static int rk_spdif_hw_params(struct snd_pcm_substream *substream,
@@ -25,7 +25,7 @@ Signed-off-by: Mark Brown <broonie@kernel.org>
  {
  	struct rk_spdif_dev *spdif = snd_soc_dai_get_drvdata(dai);
  	unsigned int val = SPDIF_CFGR_HALFWORD_ENABLE;
-@@ -137,15 +137,15 @@ static int rk_spdif_hw_params(struct snd
+@@ -138,15 +138,15 @@ static int rk_spdif_hw_params(struct snd
  	}
  
  	ret = regmap_update_bits(spdif->regmap, SPDIF_CFGR,
@@ -45,7 +45,7 @@ Signed-off-by: Mark Brown <broonie@kernel.org>
  {
  	struct rk_spdif_dev *spdif = snd_soc_dai_get_drvdata(dai);
  	int ret;
-@@ -155,31 +155,31 @@ static int rk_spdif_trigger(struct snd_p
+@@ -156,31 +156,31 @@ static int rk_spdif_trigger(struct snd_p
  	case SNDRV_PCM_TRIGGER_RESUME:
  	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
  		ret = regmap_update_bits(spdif->regmap, SPDIF_DMACR,
@@ -87,7 +87,7 @@ Signed-off-by: Mark Brown <broonie@kernel.org>
  		break;
  	default:
  		ret = -EINVAL;
-@@ -293,7 +293,7 @@ static int rk_spdif_probe(struct platfor
+@@ -294,7 +294,7 @@ static int rk_spdif_probe(struct platfor
  		grf = syscon_regmap_lookup_by_phandle(np, "rockchip,grf");
  		if (IS_ERR(grf)) {
  			dev_err(&pdev->dev,

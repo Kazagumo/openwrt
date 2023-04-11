@@ -15,7 +15,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 
 --- a/drivers/pinctrl/pinctrl-rockchip.c
 +++ b/drivers/pinctrl/pinctrl-rockchip.c
-@@ -2314,17 +2314,8 @@ static int rockchip_gpio_get_direction(s
+@@ -2323,17 +2323,8 @@ static int rockchip_gpio_get_direction(s
  {
  	struct rockchip_pin_bank *bank = gpiochip_get_data(chip);
  	u32 data;
@@ -33,7 +33,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  	if (data & BIT(offset))
  		return GPIO_LINE_DIRECTION_OUT;
  
-@@ -2350,7 +2341,6 @@ static int _rockchip_pmx_gpio_set_direct
+@@ -2359,7 +2350,6 @@ static int _rockchip_pmx_gpio_set_direct
  	if (ret < 0)
  		return ret;
  
@@ -41,7 +41,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  	raw_spin_lock_irqsave(&bank->slock, flags);
  
  	data = readl_relaxed(bank->reg_base + GPIO_SWPORT_DDR);
-@@ -2362,7 +2352,6 @@ static int _rockchip_pmx_gpio_set_direct
+@@ -2371,7 +2361,6 @@ static int _rockchip_pmx_gpio_set_direct
  	writel_relaxed(data, bank->reg_base + GPIO_SWPORT_DDR);
  
  	raw_spin_unlock_irqrestore(&bank->slock, flags);
@@ -49,7 +49,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  
  	return 0;
  }
-@@ -2813,7 +2802,6 @@ static void rockchip_gpio_set(struct gpi
+@@ -2823,7 +2812,6 @@ static void rockchip_gpio_set(struct gpi
  	unsigned long flags;
  	u32 data;
  
@@ -57,7 +57,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  	raw_spin_lock_irqsave(&bank->slock, flags);
  
  	data = readl(reg);
-@@ -2823,7 +2811,6 @@ static void rockchip_gpio_set(struct gpi
+@@ -2833,7 +2821,6 @@ static void rockchip_gpio_set(struct gpi
  	writel(data, reg);
  
  	raw_spin_unlock_irqrestore(&bank->slock, flags);
@@ -65,7 +65,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  }
  
  /*
-@@ -2835,9 +2822,7 @@ static int rockchip_gpio_get(struct gpio
+@@ -2845,9 +2832,7 @@ static int rockchip_gpio_get(struct gpio
  	struct rockchip_pin_bank *bank = gpiochip_get_data(gc);
  	u32 data;
  
@@ -75,7 +75,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  	data >>= offset;
  	data &= 1;
  	return data;
-@@ -2873,7 +2858,6 @@ static void rockchip_gpio_set_debounce(s
+@@ -2883,7 +2868,6 @@ static void rockchip_gpio_set_debounce(s
  	unsigned long flags;
  	u32 data;
  
@@ -83,7 +83,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  	raw_spin_lock_irqsave(&bank->slock, flags);
  
  	data = readl(reg);
-@@ -2884,7 +2868,6 @@ static void rockchip_gpio_set_debounce(s
+@@ -2894,7 +2878,6 @@ static void rockchip_gpio_set_debounce(s
  	writel(data, reg);
  
  	raw_spin_unlock_irqrestore(&bank->slock, flags);
@@ -91,7 +91,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  }
  
  /*
-@@ -2929,9 +2912,7 @@ static int rockchip_gpio_to_irq(struct g
+@@ -2939,9 +2922,7 @@ static int rockchip_gpio_to_irq(struct g
  	if (!bank->domain)
  		return -ENXIO;
  
@@ -101,7 +101,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  
  	return (virq) ? : -ENXIO;
  }
-@@ -3030,7 +3011,6 @@ static int rockchip_irq_set_type(struct
+@@ -3040,7 +3021,6 @@ static int rockchip_irq_set_type(struct
  	if (ret < 0)
  		return ret;
  
@@ -109,7 +109,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  	raw_spin_lock_irqsave(&bank->slock, flags);
  
  	data = readl_relaxed(bank->reg_base + GPIO_SWPORT_DDR);
-@@ -3088,7 +3068,6 @@ static int rockchip_irq_set_type(struct
+@@ -3098,7 +3078,6 @@ static int rockchip_irq_set_type(struct
  	default:
  		irq_gc_unlock(gc);
  		raw_spin_unlock_irqrestore(&bank->slock, flags);
@@ -117,7 +117,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  		return -EINVAL;
  	}
  
-@@ -3097,7 +3076,6 @@ static int rockchip_irq_set_type(struct
+@@ -3107,7 +3086,6 @@ static int rockchip_irq_set_type(struct
  
  	irq_gc_unlock(gc);
  	raw_spin_unlock_irqrestore(&bank->slock, flags);
@@ -125,7 +125,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  
  	return 0;
  }
-@@ -3107,10 +3085,8 @@ static void rockchip_irq_suspend(struct
+@@ -3117,10 +3095,8 @@ static void rockchip_irq_suspend(struct
  	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
  	struct rockchip_pin_bank *bank = gc->private;
  
@@ -136,7 +136,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  }
  
  static void rockchip_irq_resume(struct irq_data *d)
-@@ -3118,9 +3094,7 @@ static void rockchip_irq_resume(struct i
+@@ -3128,9 +3104,7 @@ static void rockchip_irq_resume(struct i
  	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
  	struct rockchip_pin_bank *bank = gc->private;
  
@@ -146,7 +146,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  }
  
  static void rockchip_irq_enable(struct irq_data *d)
-@@ -3128,7 +3102,6 @@ static void rockchip_irq_enable(struct i
+@@ -3138,7 +3112,6 @@ static void rockchip_irq_enable(struct i
  	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
  	struct rockchip_pin_bank *bank = gc->private;
  
@@ -154,7 +154,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  	irq_gc_mask_clr_bit(d);
  }
  
-@@ -3138,7 +3111,6 @@ static void rockchip_irq_disable(struct
+@@ -3148,7 +3121,6 @@ static void rockchip_irq_disable(struct
  	struct rockchip_pin_bank *bank = gc->private;
  
  	irq_gc_mask_set_bit(d);
@@ -162,7 +162,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  }
  
  static int rockchip_interrupts_register(struct platform_device *pdev,
-@@ -3158,19 +3130,11 @@ static int rockchip_interrupts_register(
+@@ -3168,19 +3140,11 @@ static int rockchip_interrupts_register(
  			continue;
  		}
  
@@ -182,7 +182,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  			continue;
  		}
  
-@@ -3181,7 +3145,6 @@ static int rockchip_interrupts_register(
+@@ -3191,7 +3155,6 @@ static int rockchip_interrupts_register(
  			dev_err(&pdev->dev, "could not alloc generic chips for bank %s\n",
  				bank->name);
  			irq_domain_remove(bank->domain);
@@ -190,7 +190,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  			continue;
  		}
  
-@@ -3213,7 +3176,6 @@ static int rockchip_interrupts_register(
+@@ -3223,7 +3186,6 @@ static int rockchip_interrupts_register(
  
  		irq_set_chained_handler_and_data(bank->irq,
  						 rockchip_irq_demux, bank);
@@ -198,7 +198,7 @@ Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
  	}
  
  	return 0;
-@@ -3332,7 +3294,7 @@ static int rockchip_get_bank_data(struct
+@@ -3342,7 +3304,7 @@ static int rockchip_get_bank_data(struct
  	if (IS_ERR(bank->clk))
  		return PTR_ERR(bank->clk);
  

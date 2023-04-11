@@ -42,7 +42,7 @@ Signed-off-by: Marc Zyngier <maz@kernel.org>
  /* Irq domain flags */
 --- a/kernel/irq/irqdomain.c
 +++ b/kernel/irq/irqdomain.c
-@@ -203,7 +203,7 @@ struct irq_domain *__irq_domain_add(stru
+@@ -195,7 +195,7 @@ static struct irq_domain *__irq_domain_c
  
  	/* Fill structure */
  	INIT_RADIX_TREE(&domain->revmap_tree, GFP_KERNEL);
@@ -51,7 +51,7 @@ Signed-off-by: Marc Zyngier <maz@kernel.org>
  	domain->ops = ops;
  	domain->host_data = host_data;
  	domain->hwirq_max = hwirq_max;
-@@ -482,13 +482,12 @@ static void irq_domain_clear_mapping(str
+@@ -506,13 +506,12 @@ static void irq_domain_clear_mapping(str
  	if (irq_domain_is_nomap(domain))
  		return;
  
@@ -70,7 +70,7 @@ Signed-off-by: Marc Zyngier <maz@kernel.org>
  }
  
  static void irq_domain_set_mapping(struct irq_domain *domain,
-@@ -498,13 +497,12 @@ static void irq_domain_set_mapping(struc
+@@ -522,13 +521,12 @@ static void irq_domain_set_mapping(struc
  	if (irq_domain_is_nomap(domain))
  		return;
  
@@ -89,7 +89,7 @@ Signed-off-by: Marc Zyngier <maz@kernel.org>
  }
  
  void irq_domain_disassociate(struct irq_domain *domain, unsigned int irq)
-@@ -922,12 +920,12 @@ unsigned int irq_find_mapping(struct irq
+@@ -979,12 +977,12 @@ unsigned int irq_find_mapping(struct irq
  		return 0;
  	}
  
@@ -106,7 +106,7 @@ Signed-off-by: Marc Zyngier <maz@kernel.org>
  	rcu_read_unlock();
  	return data ? data->irq : 0;
  }
-@@ -1510,18 +1508,17 @@ static void irq_domain_fix_revmap(struct
+@@ -1578,18 +1576,17 @@ static void irq_domain_fix_revmap(struct
  	if (irq_domain_is_nomap(d->domain))
  		return;
  

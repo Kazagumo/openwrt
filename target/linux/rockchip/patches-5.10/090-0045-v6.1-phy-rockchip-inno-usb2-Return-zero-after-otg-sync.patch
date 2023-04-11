@@ -24,7 +24,7 @@ Signed-off-by: Vinod Koul <vkoul@kernel.org>
 
 --- a/drivers/phy/rockchip/phy-rockchip-inno-usb2.c
 +++ b/drivers/phy/rockchip/phy-rockchip-inno-usb2.c
-@@ -1132,7 +1132,7 @@ static int rockchip_usb2phy_otg_port_ini
+@@ -1134,7 +1134,7 @@ static int rockchip_usb2phy_otg_port_ini
  					  struct rockchip_usb2phy_port *rport,
  					  struct device_node *child_np)
  {
@@ -33,7 +33,7 @@ Signed-off-by: Vinod Koul <vkoul@kernel.org>
  
  	rport->port_id = USB2PHY_PORT_OTG;
  	rport->port_cfg = &rphy->phy_cfg->port_cfgs[USB2PHY_PORT_OTG];
-@@ -1170,13 +1170,15 @@ static int rockchip_usb2phy_otg_port_ini
+@@ -1172,13 +1172,15 @@ static int rockchip_usb2phy_otg_port_ini
  
  		ret = devm_extcon_register_notifier(rphy->dev, rphy->edev,
  					EXTCON_USB_HOST, &rport->event_nb);

@@ -69,7 +69,7 @@ ramips_setup_interfaces()
 		uci add_list firewall.@zone[1].network='eth_om'
 		;;
 	bravotek,ax1800)
-		ucidef_set_interfaces_lan_wan "eth0 ra0 rai0" "eth1"
+		ucidef_set_interfaces_lan_wan "eth0 rax0 ra0" "eth1"
 		ucidef_add_switch "switch0" \
 			"1:lan" "0:wan" "6u@eth0" "5u@eth1"
 		;;
@@ -80,7 +80,7 @@ ramips_setup_interfaces()
 		ucidef_set_interface_lan "ethblack ethblue ethyellow"
 		;;
 	jcg,q20)
-		ucidef_set_interfaces_lan_wan "eth0 ra0 rai0" "eth1"
+		ucidef_set_interfaces_lan_wan "eth0 rax0 ra0" "eth1"
 		ucidef_add_switch "switch0" \
 			"1:lan:1" "4:lan:2" "0:wan" "6u@eth0" "5u@eth1"
 		;;

@@ -279,6 +279,15 @@ define Device/beeline_smartbox-flash
 endef
 TARGET_DEVICES += beeline_smartbox-flash
 
+define Device/bravotek_ax1800
+  $(Device/uimage-lzma-loader)
+  IMAGE_SIZE := 15808k
+  DEVICE_VENDOR := Bravotek
+  DEVICE_MODEL := AX1800
+  DEVICE_PACKAGES := kmod-mt7915e
+endef
+TARGET_DEVICES += bravotek_ax1800
+
 define Device/buffalo_wsr-1166dhp
   $(Device/dsa-migration)
   $(Device/uimage-lzma-loader)

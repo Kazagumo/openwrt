@@ -95,12 +95,12 @@
 
 		partition@180000 {
 			label = "kernel";
-			reg = <0x180000 0x400000>;
+			reg = <0x180000 0x500000>;
 		};
 
-		ubiconcat0: partition@580000 {
+		ubiconcat0: partition@680000 {
 			label = "ubiconcat0";
-			reg = <0x580000 0x1c00000>;
+			reg = <0x680000 0x1b00000>;
 		};
 
 		partition@2180000 {

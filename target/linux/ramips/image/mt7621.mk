@@ -1039,7 +1039,7 @@ define Device/jcg_q20
   BLOCKSIZE := 128k
   PAGESIZE := 2048
   UBINIZE_OPTS := -E 5
-  KERNEL_SIZE := 4096k
+  KERNEL_SIZE := 5120k
   IMAGE_SIZE := 91136k
   IMAGES += factory.bin
   IMAGE/sysupgrade.bin := sysupgrade-tar | append-metadata
